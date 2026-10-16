@@ -95,53 +95,49 @@ tables you've marked private), etc.
 
 ## About tryconnect
 
-Temukan zona dan lokasi terbaik untuk mencari cuan
-
-_(add a sentence or two more of product context here so Claude Code has a
-shared understanding of what this app is for)_
+Temukan zona dan lokasi terbaik untuk mencari cuan. One list of places
+where people can earn extra money, nearest first; each place is tagged
+with a ready-made kind of cuan (Makanan, Ojek, Jualan, Jasa). Any member
+can add a place, open it, report one they did not add, or remove one they
+added. Guests can browse; every write needs an account.
 
 ## Design
 
-This app's look. The first real version fills in the blanks; every later
-change follows it, and updates it when a request changes the look on purpose.
+The app's look, set by the first version's spec. Every later change follows
+it, and updates it when a request changes the look on purpose.
 
-- **Palette:** _(name the accent, any second colour and the neutrals, e.g.
-  "accent: tomato red; second: basil green; neutrals: warm greys")_
-- **Signature element:** _(the one thing on screen drawn from this app's
-  subject, which no other app would have)_
-- **Type scale:** `text-title`, `text-heading`, `text-body`, `text-small`
-  _(change their sizes in `tailwind.config.js` if you must, not their number)_
-- **One fixed look:** _(only for an app drawn as its own scene, such as a
-  game: which look, and why. Otherwise delete this line.)_
-
-The kit is in `styles/tailwind-input.css`: colour tokens with a light and
-a dark value (named in `tailwind.config.js`), and a few components
-(`page-column`, `btn-primary`, `btn-secondary`, `field`, `list`, `list-row`,
-`card`, `section-label`, `skeleton`, `state-empty`, `state-error`).
-Re-theme by changing the token values there, keeping every text pair at
-4.5:1 or more in both looks.
-
-- Colour comes only from the tokens (`bg-ground`, `bg-surface`,
-  `text-fg`, `text-muted`, `border-line`, `bg-accent` with
-  `text-on-accent`, ...): never a raw hex value or a stock palette class.
-- Tap targets are at least 44 px; the buttons and fields already are.
-- A field's label says what it is; its placeholder, if any, is an example
-  that says so ("e.g. 5.0"), never a bare value that could pass for one
-  already entered.
-- Each screen sits in `page-column`, one centred column on a wide window.
-- Every screen that loads data has honest loading, empty and error states.
-  Never show the empty state while loading or after a failure; an error says
-  what failed, what still works, and offers Retry. Loading has the content's
-  own shape (its rows, with `skeleton` bars for their text).
-- Seed obviously fake staging demo data so the populated screen can be seen
-  ("Staging mock data" in the platform conventions).
-- No cards in cards, no uppercase eyebrows, no emoji as icons.
-- A header that shows the app's own mark shows the project's icon there
-  (the emoji in `dapp.json`'s `icon` block) or no mark at all: never an
-  empty tile, and never `brand/icon.png`, which the app does not serve.
+- **Palette:** warm neutrals with one action colour, a market orange
+  (accent 194 65 12 light / 251 146 60 dark; on-accent white / near-black
+  40 16 4). Neutrals: warm greys tinted with ink, not grey-grey — ground
+  250 247 242 / 24 20 16, surface 255 255 255 / 36 31 25, raised 243 238
+  230 / 50 43 35, line 232 224 212 / 64 56 46, fg 35 28 20 / 245 239 230,
+  muted 98 87 74 / 184 172 156.
+- **Category colours** (badge text on a raised surface, each kind keeps its
+  colour wherever it shows): food 22 101 52 / 74 222 128, ride 29 78 216 /
+  147 180 253, sell 133 77 14 / 252 211 77, service 109 40 217 / 196 181
+  253. These are the only extra colours; everything else is the tokens.
+- **Signature element:** the zone card shaped like a location tag — square
+  at the top left corner (6px, where it hangs from a pin) and rounded on
+  the other three corners (20px), with a line-drawn map pin in the action
+  orange at its left. The kind of cuan is a small coloured badge on the
+  card's meta line.
+- **Type scale:** `text-title`, `text-heading`, `text-body`, `text-small`.
+  Family is the system rounded face (ui-rounded), then system-ui; set in
+  `tailwind.config.js` and on `.app` in `public/screens.css`.
+- The app's text is in Indonesian (lang="id"). One word per thing: zona,
+  jenis cuan, catatan singkat, Tambah zona, Simpan zona, Laporkan, Hapus
+  zona. Distance reads "350 m" or "1,2 km".
 
 ## App-specific conventions
 
-_(optional — e.g. "all currency values stored as integer cents, not
-floats"; "the `posts` table is append-only"; "avoid adding new
-dependencies"; etc.)_
+- Categories are fixed server-side: `makanan`, `ojek`, `jualan`, `jasa` in
+  `server.js`'s `CATEGORIES`. A new category needs its colour token too.
+- Coordinates are rounded to 4 decimals (~11 m) before saving, and must
+  fall inside Indonesia's rough bounds (`cleanCoords` in server.js).
+- Sorting happens in the browser from `GET /api/zones` rows; the server
+  never sorts by distance.
+- `zone_reports` is marked `staging:private`; everything else is public.
+- The `?demo=1` demo is staging-only: boot seeds eight fake-author zones
+  with fixed `demo_key`s, and the viewer's own two zones are written once
+  per account on their first `?demo=1` read. Demo rows never appear
+  without `?demo=1`.

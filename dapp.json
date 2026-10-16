@@ -4,8 +4,32 @@
     "emoji": "📍"
   },
   "secrets": [],
+  "permissions": [
+    {
+      "capability": "geolocation",
+      "reason": "Mengurutkan zona dari yang paling dekat dan menandai zona baru"
+    }
+  ],
   "governance": {
     "preset": "you_or_the_group"
   },
-  "tests": []
+  "tests": [
+    {
+      "name": "Zone list loads",
+      "path": "/",
+      "expectSelector": "[data-zone-list], .zone, .state-empty"
+    },
+    {
+      "name": "Populated demo",
+      "path": "/?demo=1",
+      "expectText": "Pasar Pagi Kebon Jeruk",
+      "visual": true,
+      "impact": ["public/**", "server.js", "styles/**"]
+    },
+    {
+      "name": "Health",
+      "path": "/health",
+      "expectText": "ok"
+    }
+  ]
 }

@@ -1,27 +1,30 @@
 # tryconnect
 
-> **Starter template** — this repo was scaffolded by Homeroom Social
-> Vibecoding. Everything in it is placeholder example code until the
-> app's first real feature is built.
+Temukan zona dan lokasi terbaik untuk mencari cuan. tryconnect is one list
+of places where people can earn extra money, nearest first. Each place is
+tagged with a ready-made kind of cuan (Makanan, Ojek, Jualan or Jasa). Any
+member can add a place, open it, report one they did not add, or remove one
+they added.
 
-The scaffold is a small working demo that proves the plumbing works:
+## How it works
 
-- **Sign-in** — the server verifies the platform-issued user token
-  (an RS256 JWT) on every request, so the app already knows who is
-  using it. No accounts to build.
-- **Database** — the app has its own private Postgres database, ready
-  to store things.
-- **Styling** — Tailwind CSS, precompiled by `npm run build` during
-  image creation with either Kubernetes/Paketo or standalone Docker, in a
-  light and a dark look that follow the viewer's Homeroom theme.
+- The main screen lists zone cards: name, distance, a short note, the kind
+  of cuan and who added it.
+- Sorting is nearest-first, which needs your location: the app asks for it
+  only when you tap "Pakai lokasi saya". Without it the list falls back to
+  newest first.
+- Adding a zone opens a sheet: name (60 chars), kind of cuan (chips),
+  optional note (140 chars) and your current position as the spot.
+- Guests can browse; adding, reporting and removing need an account.
 
-## Replacing the template
+## Running
 
-To change this app, ask Homeroom bot: open the app on Homeroom, tap the
-Homeroom icon in the header, then **Suggest an improvement**, and describe
-the app you want in plain English. The template will be replaced with your
-real app. You can also run
-Claude Code against this repo directly; start with `CLAUDE.md`, which
-carries the app-specific notes and points at the platform rules.
+```sh
+npm ci
+npm run build   # compiles styles/tailwind.css to public/tailwind.css
+npm start       # node server.js
+```
 
-Once the real app exists, rewrite this README to describe it.
+On staging, `?demo=1` shows a populated demo around a fixed spot in West
+Jakarta, with the viewer's own two zones. Demo rows never appear without
+`?demo=1`.

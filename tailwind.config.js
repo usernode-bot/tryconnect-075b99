@@ -55,6 +55,11 @@ module.exports = {
         danger: token('danger'),
         'on-danger': token('on-danger'),
         focus: token('focus'), // the keyboard focus ring
+        // The four kinds of cuan, as badge text on a raised surface.
+        food: token('food'),
+        ride: token('ride'),
+        sell: token('sell'),
+        service: token('service'),
       },
       // The type scale: four sizes, and nothing in between.
       fontSize: {
@@ -62,6 +67,10 @@ module.exports = {
         body: ['1rem', { lineHeight: '1.5rem' }],
         heading: ['1.25rem', { lineHeight: '1.75rem', fontWeight: '600' }],
         title: ['1.75rem', { lineHeight: '2.25rem', fontWeight: '700' }],
+      },
+      // The system rounded face first, then the system family.
+      fontFamily: {
+        sans: ['ui-rounded', 'system-ui', 'sans-serif'],
       },
     },
   },
