@@ -24,12 +24,20 @@
       "path": "/?demo=1",
       "expectText": "Pasar Pagi Kebon Jeruk",
       "visual": true,
-      "impact": ["public/**", "server.js", "styles/**"]
+      "impact": [
+        "public/**",
+        "server.js",
+        "styles/**"
+      ]
     },
     {
       "name": "Health",
       "path": "/health",
       "expectText": "ok"
     }
-  ]
+  ],
+  "visibility": {
+    "build": "public",
+    "view": "public"
+  }
 }
