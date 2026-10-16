@@ -78,6 +78,7 @@
        classes, swap this link for the platform-hosted engine instead:
        <script src="/usernode-tailwind/v1/tailwind.js"></script> -->
   <link rel="stylesheet" href="/tailwind.css">
+  <link rel="stylesheet" href="/screens.css">
   <!-- The platform bridge, centrally hosted and loaded by RELATIVE path (the
        handler in server.js serves it under a plain "node server.js"; the
        platform's edge answers it everywhere else). Never vendor it and never
@@ -115,21 +116,30 @@
   <!-- (Named in prose on purpose: Tailwind compiles any class-name word in
        these files, comments included, and the starter should ship only the
        components its screen uses.) -->
-  <main class="mx-auto flex max-w-md flex-col gap-8 px-4 py-10">
+  <!-- usernode-spec-screens@1: the screens the spec drew, carried over by the platform as this
+       first version's starting point. Their styles are in public/screens.css.
+       Change them where behaviour needs it; do not redraw them. -->
+  <div data-spec-screen="1">
+    <div class="app">
+    <div class="top"><h1>tryconnect</h1><p class="sub">12 zona peluang cuan, paling dekat dulu</p></div>
+    <div class="chips"><button class="chip on">Semua</button><button class="chip">Makanan</button><button class="chip">Ojek</button><button class="chip">Jualan</button><button class="chip">Jasa</button></div>
+    <p class="section-label">Dekat kamu</p>
 
-    <!-- usernode-starter-notice@1 — starter-template messaging. When building
-         the user's real app, replace this whole screen and delete this block,
-         both sentinel comments included. -->
-    <section class="card flex flex-col items-start gap-3">
-      <div class="flex h-20 w-20 items-center justify-center rounded-2xl border border-line bg-ground text-title">📍</div>
-      <span class="rounded-full bg-raised px-3 py-1 text-small font-medium text-muted">Starter template</span>
-      <h1 class="text-title">tryconnect</h1>
-      <p class="text-body text-muted">Welcome to your new app! Everything on this screen is placeholder content that came with it.</p>
-      <p class="text-body text-muted">To change this app, ask Homeroom bot: tap the <strong class="font-semibold text-fg">Homeroom icon</strong>, then <strong class="font-semibold text-fg">Suggest an improvement</strong>. Describe what you'd like in plain English, and it will be turned into your real app.</p>
-    </section>
-    <!-- /usernode-starter-notice@1 -->
+    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Pasar Pagi Kebon Jeruk</span><span class="dist">350 m</span></div><p class="note">Ramai jam 5 sampai 8 pagi, pesanan sarapan banyak.</p><div class="meta"><span class="badge b1">Makanan</span><span>Ditambah kamu</span></div></div></div>
 
-    <p class="text-center text-small text-muted">Built on Homeroom. This template screen disappears once you build your real app.</p>
-  </main>
+    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Stasiun Palmerah</span><span class="dist">1,2 km</span></div><p class="note">Penumpang keluar jam 17.00 sampai 19.00, antrean ojek cepat jalan.</p><div class="meta"><span class="badge b2">Ojek</span><span>Ditambah Rina Contoh</span></div></div></div>
+
+    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Lapangan Car Free Day</span><span class="dist">2,4 km</span></div><p class="note">Minggu pagi, cocok untuk jual minuman dingin dan kaos.</p><div class="meta"><span class="badge b3">Jualan</span><span>Ditambah Bagas Contoh</span></div></div></div>
+
+    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Kompleks Ruko Meruya</span><span class="dist">3,1 km</span></div><p class="note">Banyak kantor kecil, butuh jasa cuci motor dan servis AC.</p><div class="meta"><span class="badge b4">Jasa</span><span>Ditambah Dewi Contoh</span></div></div></div>
+
+    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Terminal Kalideres</span><span class="dist">5,8 km</span></div><p class="note">Sabtu malam penuh pemudik, tarif antar jauh lebih tinggi.</p><div class="meta"><span class="badge b2">Ojek</span><span>Ditambah kamu</span></div></div></div>
+
+    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Bazar Kampus Trisakti</span><span class="dist">7,0 km</span></div><p class="note">Bazar bulanan, sewa lapak murah untuk pemula.</p><div class="meta"><span class="badge b3">Jualan</span><span>Ditambah Rina Contoh</span></div></div></div>
+
+    <button class="btn-primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Tambah zona</button>
+    </div>
+  </div>
+  <!-- /usernode-spec-screens@1 -->
 </body>
 </html>
