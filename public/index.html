@@ -141,10 +141,10 @@
 
     <!-- Loading: the list's own shape, skeleton bars where the text goes. -->
     <div id="state-loading" hidden aria-live="polite">
-      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk" style="width:60%">&nbsp;</span><span class="sk" style="width:15%">&nbsp;</span></div><p class="note"><span class="sk" style="display:block;height:14px;width:90%">&nbsp;</span></p><div class="meta"><span class="sk" style="width:70px">&nbsp;</span><span class="sk" style="width:90px">&nbsp;</span></div></div></div>
-      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk" style="width:45%">&nbsp;</span><span class="sk" style="width:15%">&nbsp;</span></div><p class="note"><span class="sk" style="display:block;height:14px;width:80%">&nbsp;</span></p><div class="meta"><span class="sk" style="width:70px">&nbsp;</span><span class="sk" style="width:90px">&nbsp;</span></div></div></div>
-      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk" style="width:55%">&nbsp;</span><span class="sk" style="width:15%">&nbsp;</span></div><p class="note"><span class="sk" style="display:block;height:14px;width:85%">&nbsp;</span></p><div class="meta"><span class="sk" style="width:70px">&nbsp;</span><span class="sk" style="width:90px">&nbsp;</span></div></div></div>
-      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk" style="width:50%">&nbsp;</span><span class="sk" style="width:15%">&nbsp;</span></div><p class="note"><span class="sk" style="display:block;height:14px;width:75%">&nbsp;</span></p><div class="meta"><span class="sk" style="width:70px">&nbsp;</span><span class="sk" style="width:90px">&nbsp;</span></div></div></div>
+      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk sk-name" style="width:58%"></span><span class="sk sk-dist" style="width:44px"></span></div><span class="sk sk-line" style="width:92%"></span><span class="sk sk-line" style="width:64%"></span><div class="meta"><span class="sk sk-badge" style="width:76px"></span><span class="sk" style="width:96px;height:12px"></span></div></div></div>
+      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk sk-name" style="width:44%"></span><span class="sk sk-dist" style="width:44px"></span></div><span class="sk sk-line" style="width:84%"></span><span class="sk sk-line" style="width:52%"></span><div class="meta"><span class="sk sk-badge" style="width:76px"></span><span class="sk" style="width:96px;height:12px"></span></div></div></div>
+      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk sk-name" style="width:52%"></span><span class="sk sk-dist" style="width:44px"></span></div><span class="sk sk-line" style="width:88%"></span><span class="sk sk-line" style="width:70%"></span><div class="meta"><span class="sk sk-badge" style="width:76px"></span><span class="sk" style="width:96px;height:12px"></span></div></div></div>
+      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk sk-name" style="width:48%"></span><span class="sk sk-dist" style="width:44px"></span></div><span class="sk sk-line" style="width:78%"></span><span class="sk sk-line" style="width:58%"></span><div class="meta"><span class="sk sk-badge" style="width:76px"></span><span class="sk" style="width:96px;height:12px"></span></div></div></div>
     </div>
 
     <!-- Empty: only after a load that worked and found nothing. -->
@@ -157,8 +157,7 @@
 
     <!-- Error: only when the load failed. -->
     <div id="state-error" class="state-error" hidden>
-      <p class="empty-title">Zona tidak bisa dimuat</p>
-      <p class="empty-sub">Cek koneksi kamu lalu coba lagi.</p>
+      <p class="empty-sub err-line">Zona tidak bisa dimuat. Cek koneksi kamu lalu coba lagi.</p>
       <button class="btn-primary" id="retry-btn" type="button">Coba lagi</button>
     </div>
 
@@ -178,7 +177,7 @@
 
     <!-- ── Add sheet ── -->
     <div class="sheet-back" id="add-sheet" hidden>
-      <div class="sheet" role="dialog" aria-modal="true" aria-label="Tambah zona">
+      <div class="sheet sheet-add" role="dialog" aria-modal="true" aria-label="Tambah zona">
         <div class="sheet-grab"></div>
         <div class="sheet-top">
           <button class="sheet-cancel" id="add-cancel" type="button">Batal</button>
@@ -200,8 +199,10 @@
           <button class="locbtn" id="f-loc-btn" type="button">Pakai lokasi saya sekarang</button>
           <p class="fhint" id="f-loc-hint">Zona ditandai di tempat kamu berdiri sekarang.</p>
           <p class="ferr" id="add-err" hidden></p>
-          <button class="btn-primary w-full" id="add-save" type="submit">Simpan zona</button>
         </form>
+        <div class="sheet-foot">
+          <button class="btn-primary" id="add-save" type="submit" form="add-form">Simpan zona</button>
+        </div>
       </div>
     </div>
 
