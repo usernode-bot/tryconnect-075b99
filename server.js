@@ -37,6 +37,12 @@ const GUEST_PUBLIC_KEY = (process.env.USERNODE_GUEST_JWT_PUBLIC_KEY || '')
 // Everything else requires a valid platform-issued JWT.
 const PUBLIC_API_PATHS = new Set(['/health']);
 
+// The four ready-made kinds of cuan, as the spec fixes them.
+const CATEGORIES = ['makanan', 'ojek', 'jualan', 'jasa'];
+
+// Data and demo rows are staging-only; the feature itself is not.
+const IS_STAGING = process.env.USERNODE_ENV === 'staging';
+
 app.use(express.json());
 
 // The platform's three centrally hosted files — the bridge, the native UI
@@ -89,7 +95,6 @@ app.get(/^\/usernode-(?:bridge|native|tailwind)\//, async (req, res) => {
 // page sends `usernode.now()` on as the `x-usernode-now` header. Only a
 // staging container reads either. See "Time-dependent features" in the
 // platform conventions.
-const IS_STAGING = process.env.USERNODE_ENV === 'staging';
 const PREVIEW_NOW = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
 function requestNow(req) {
   const raw = IS_STAGING ? (req.headers['x-usernode-now'] || req.query['un-now']) : null;
@@ -154,6 +159,213 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 // fresh load.
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 
+// ── Schema ────────────────────────────────────────────────────────────────
+// Applied idempotently on every boot (CREATE TABLE IF NOT EXISTS / ADD
+// COLUMN IF NOT EXISTS), so a staging rebuild and a first production boot
+// both land on the same shape.
+//
+// `zones` is public (the list IS the app); `zone_reports` carries who
+// reported what, personal information beyond a public username, so it is
+// marked `staging:private` and staging copies its schema without the rows.
+async function migrate() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS zones (
+      id serial PRIMARY KEY,
+      author_id text NOT NULL,
+      author_username text NOT NULL,
+      name varchar(60) NOT NULL,
+      category text NOT NULL CHECK (category = ANY(ARRAY['makanan','ojek','jualan','jasa']::text[])),
+      note varchar(140) NOT NULL DEFAULT '',
+      lat double precision,
+      lng double precision,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      is_demo boolean NOT NULL DEFAULT false,
+      demo_key text UNIQUE
+    )`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS zone_reports (
+      id serial PRIMARY KEY,
+      zone_id integer NOT NULL REFERENCES zones(id) ON DELETE CASCADE,
+      reporter_id text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (zone_id, reporter_id)
+    )`);
+  // Which accounts have had their two demo zones written: a one-per-account
+  // marker, so a zone the viewer deleted during the demo is not written
+  // again on their next load.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS demo_viewer_seeds (
+      account_id text PRIMARY KEY,
+      seeded_at timestamptz NOT NULL DEFAULT now()
+    )`);
+  await pool.query(
+    `COMMENT ON TABLE zone_reports IS 'staging:private'`);
+  await pool.query(
+    `COMMENT ON TABLE demo_viewer_seeds IS 'staging:private'`);
+}
+
+// ── Staging demo ──────────────────────────────────────────────────────────
+// A first version's populated demo (the "Staging demo" convention, first-
+// version exception): staging only, `?demo=1` only, and two seeds.
+//
+// 1. On boot: ~8 zones by obviously fake people, fixed `demo_key`s, ON
+//    CONFLICT DO NOTHING so a rebuild changes nothing.
+// 2. On the first `GET /api/zones?demo=1` of an account: that viewer's two
+//    zones, `demo_key viewer:<id>:1` / `:2`, so what the viewer deletes
+//    stays deleted on reload. Demo rows never appear without `demo=1`, so
+//    the plain route's empty state stays honest.
+const DEMO_ORIGIN = { lat: -6.1450, lng: 106.7450 }; // a fixed spot in West Jakarta
+const DEMO_ZONES = [
+  { key: 'demo:1', name: 'Angkringan Pak Tono', category: 'makanan', note: 'Kopi dan sate jam 6 sampai 11 malam, ramai anak kos.', lat: -6.1428, lng: 106.7502 },
+  { key: 'demo:2', name: 'Stasiun Palmerah', category: 'ojek', note: 'Penumpang keluar jam 17.00 sampai 19.00, antrean ojek cepat jalan.', lat: -6.2071, lng: 106.7966 },
+  { key: 'demo:3', name: 'Lapangan Car Free Day', category: 'jualan', note: 'Minggu pagi, cocok untuk jual minuman dingin dan kaos.', lat: -6.1705, lng: 106.7590 },
+  { key: 'demo:4', name: 'Kompleks Ruko Meruya', category: 'jasa', note: 'Banyak kantor kecil, butuh jasa cuci motor dan servis AC.', lat: -6.1971, lng: 106.7360 },
+  { key: 'demo:5', name: 'Halte TransGlodok', category: 'ojek', note: 'Jam 8 pagi penumpang berebut, banyak tawaran antar kantor.', lat: -6.1312, lng: 106.6950 },
+  { key: 'demo:6', name: 'Bazar Kampus Trisakti', category: 'jualan', note: 'Bazar bulanan, sewa lapak murah untuk pemula.', lat: -6.1573, lng: 106.7448 },
+  { key: 'demo:7', name: 'Warung Kopi Cengkareng', category: 'makanan', note: 'Malam hari ramai anak kantor, butuh bantuan antar pesanan.', lat: -6.1550, lng: 106.7250 },
+  { key: 'demo:8', name: 'Sentra Kreasi Podomoro', category: 'jasa', note: 'Butuh jasa servis sepeda dan laundry kilat tiap akhir bulan.', lat: -6.1630, lng: 106.7330 },
+];
+const DEMO_AUTHORS = ['Rina Contoh', 'Bagas Contoh', 'Dewi Contoh', 'Sari Contoh', 'Tono Contoh', 'Maya Contoh', 'Andra Contoh'];
+
+async function seedDemoZones() {
+  const rows = DEMO_ZONES.map((z, i) => [
+    'demo-author:' + (i + 1), DEMO_AUTHORS[i % DEMO_AUTHORS.length],
+    z.name, z.category, z.note, z.lat, z.lng, z.key,
+  ]);
+  // Older created_at for earlier rows, so "newest first" is stable.
+  await pool.query(`
+    INSERT INTO zones (author_id, author_username, name, category, note, lat, lng, is_demo, demo_key, created_at)
+    SELECT * FROM unnest($1::text[], $2::text[], $3::varchar[], $4::text[], $5::varchar[], $6::float8[], $7::float8[], $8::boolean[], $9::text[], $10::timestamptz[])
+    ON CONFLICT (demo_key) DO NOTHING`,
+    [
+      rows.map(r => r[0]), rows.map(r => r[1]), rows.map(r => r[2]), rows.map(r => r[3]),
+      rows.map(r => r[4]), rows.map(r => r[5]), rows.map(r => r[6]),
+      rows.map(() => true), rows.map(r => r[7]),
+      rows.map((_, i) => new Date(Date.now() - (rows.length - i) * 36e5)),
+    ]);
+}
+
+async function seedViewerDemoZones(user) {
+  // The viewer's two zones, written once per account: the marker row is
+  // the "once" — after the viewer deletes a demo zone, a reload does not
+  // bring it back.
+  const marker = await pool.query(
+    'INSERT INTO demo_viewer_seeds (account_id) VALUES ($1) ON CONFLICT DO NOTHING RETURNING account_id',
+    [String(user.id)]);
+  if (marker.rowCount === 0) return;
+  await pool.query(`
+    INSERT INTO zones (author_id, author_username, name, category, note, lat, lng, is_demo, demo_key)
+    VALUES
+      ($1, $2, 'Pasar Pagi Kebon Jeruk', 'makanan', 'Ramai jam 5 sampai 8 pagi, pesanan sarapan banyak.', $3, $4, true, $5),
+      ($1, $2, 'Terminal Kalideres', 'ojek', 'Sabtu malam penuh pemudik, tarif antar jauh lebih tinggi.', $6, $7, true, $8)
+    ON CONFLICT (demo_key) DO NOTHING`,
+    [String(user.id), user.username,
+      -6.1482, 106.7489, 'viewer:' + user.id + ':1',
+      -6.1470, 106.7025, 'viewer:' + user.id + ':2']);
+}
+
+// ── The API ───────────────────────────────────────────────────────────────
+// Sorting happens in the browser; these routes return rows and (in the
+// demo) a fixed stand-in position for the viewer.
+
+app.get('/api/zones', async (req, res) => {
+  try {
+    const demo = IS_STAGING && req.query.demo === '1';
+    if (demo && req.user) await seedViewerDemoZones(req.user);
+    const viewerId = req.user ? req.user.id : null;
+    const { rows } = await pool.query(`
+      SELECT id, author_id, author_username, name, category, note, lat, lng, created_at,
+             (author_id = $1::text) AS mine
+      FROM zones
+      WHERE is_demo = $2::boolean
+      ORDER BY created_at DESC`,
+      [viewerId, demo]);
+    res.json({ zones: rows, demoOrigin: demo ? DEMO_ORIGIN : null });
+  } catch (err) {
+    console.error('GET /api/zones failed', err);
+    res.status(500).json({ error: 'gagal_memuat' });
+  }
+});
+
+// Coordinates a client may hand us: inside Indonesia's rough bounds, so a
+// stray or absurd value is refused rather than saved. Rounded to 4 decimals
+// (~11 m) before saving, which is fine for a zone.
+function cleanCoords(lat, lng) {
+  if (lat === undefined || lat === null || lng === undefined || lng === null) {
+    return { lat: null, lng: null };
+  }
+  const la = Number(lat), ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln)) return { lat: null, lng: null };
+  if (la < -11.5 || la > 6.5 || ln < 94.5 || ln > 141.5) return null;
+  return { lat: Math.round(la * 10000) / 10000, lng: Math.round(ln * 10000) / 10000 };
+}
+
+app.post('/api/zones', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'account_required' });
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const note = typeof req.body.note === 'string' ? req.body.note.trim() : '';
+    const category = req.body.category;
+    if (!name || name.length > 60) return res.status(400).json({ error: 'Nama zona wajib diisi, paling banyak 60 huruf.' });
+    if (!CATEGORIES.includes(category)) return res.status(400).json({ error: 'Pilih salah satu jenis cuan.' });
+    if (note.length > 140) return res.status(400).json({ error: 'Catatan singkat paling banyak 140 huruf.' });
+    const coords = cleanCoords(req.body.lat, req.body.lng);
+    if (coords === null) return res.status(400).json({ error: 'Lokasi tidak valid.' });
+    const { rows: [row] } = await pool.query(`
+      INSERT INTO zones (author_id, author_username, name, category, note, lat, lng, is_demo)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, author_id, author_username, name, category, note, lat, lng, created_at,
+                (author_id = $1::text) AS mine`,
+      [req.user.id, req.user.username, name, category, note, coords.lat, coords.lng, IS_STAGING && req.query.demo === '1']);
+    res.status(201).json({ zone: row });
+  } catch (err) {
+    console.error('POST /api/zones failed', err);
+    res.status(500).json({ error: 'gagal_menyimpan' });
+  }
+});
+
+app.delete('/api/zones/:id', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'account_required' });
+    const zoneId = Number(req.params.id);
+    if (!Number.isInteger(zoneId)) return res.status(400).json({ error: 'Zona tidak ditemukan.' });
+    const { rows: [zone] } = await pool.query(
+      'SELECT author_id FROM zones WHERE id = $1::int', [zoneId]);
+    if (!zone) return res.status(404).json({ error: 'Zona tidak ditemukan.' });
+    // Token ids arrive as numbers, author_id is text: compare as strings.
+    if (String(zone.author_id) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Zona ini bukan tambahan kamu.' });
+    }
+    await pool.query('DELETE FROM zones WHERE id = $1::int', [zoneId]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /api/zones/:id failed', err);
+    res.status(500).json({ error: 'gagal_menghapus' });
+  }
+});
+
+app.post('/api/zones/:id/report', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'account_required' });
+    const zoneId = Number(req.params.id);
+    if (!Number.isInteger(zoneId)) return res.status(400).json({ error: 'Zona tidak ditemukan.' });
+    const { rows: [zone] } = await pool.query(
+      'SELECT author_id FROM zones WHERE id = $1::int', [zoneId]);
+    if (!zone) return res.status(404).json({ error: 'Zona tidak ditemukan.' });
+    if (String(zone.author_id) === String(req.user.id)) {
+      return res.status(400).json({ error: 'Zona ini tambahan kamu sendiri.' });
+    }
+    await pool.query(
+      'INSERT INTO zone_reports (zone_id, reporter_id, created_at) VALUES ($1::int, $2, $3) ON CONFLICT DO NOTHING',
+      [zoneId, req.user.id, req.now]);
+    // A report never hides the zone; it is only recorded.
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/zones/:id/report failed', err);
+    res.status(500).json({ error: 'gagal_melaporkan' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // HTML shell: serve the app if authenticated. Unauthenticated top-level
@@ -170,7 +382,6 @@ app.get('*', (req, res) => {
     // path+query into the chromeless view so share links land on the
     // shared screen, not Home. The clean platform route stores `path`
     // as one encoded query value so an inner ?, &, or = survives. The
-    // shell decodes and validates it as relative-only before use. The
     // character test keeps the
     // value attribute-safe for the landing anchor below — anything
     // unusual falls back to the bare link.
@@ -192,9 +403,21 @@ app.get('*', (req, res) => {
 });
 
 async function start() {
+  await migrate();
+  // The demo exists only on staging, and its fake authors are seeded once
+  // per boot; a viewer's own rows are written on their first ?demo=1 read.
+  if (IS_STAGING) await seedDemoZones();
   const server = app.listen(port, () => console.log(`Listening on :${port}`));
   // Let Envoy retire idle upstream connections at 60s, with a 15s margin.
   server.keepAliveTimeout = 75_000;
+  // Stop accepting connections, drain what is in flight, close the pool.
+  const shutdown = (signal) => {
+    console.log(signal + ': shutting down');
+    server.close(() => pool.end().then(() => process.exit(0)));
+    setTimeout(() => pool.end().then(() => process.exit(0)), 3000).unref();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 start().catch(err => { console.error(err); process.exit(1); });

@@ -44,6 +44,8 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 
 .section-label {font-size:14px;line-height:20px;font-weight:500;color:rgb(var(--muted));margin:0 0 8px;padding:0 4px}
 
+.noloc-head {margin:16px 0 8px}
+
 .zone {display:flex;gap:12px;background:rgb(var(--surface));border:1px solid rgb(var(--line));border-radius:6px 20px 20px 20px;padding:14px;margin-bottom:12px}
 
 .pin {width:40px;height:40px;flex:none;color:rgb(var(--accent))}
@@ -70,4 +72,57 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 
 .b4 {color:rgb(var(--service))}
 
-.btn-primary {position:absolute;right:16px;top:1028px;min-height:52px;padding:0 20px;border-radius:26px;background:rgb(var(--accent));color:rgb(var(--on-accent));display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(35,28,20,.25);border:0;font:inherit;font-weight:600}
+/* The kinds by name, so a badge keeps its colour wherever it shows
+   (the drawn rows use .b1–.b4; rows rendered from data use these). */
+.badge.makanan {color:rgb(var(--food))}
+.badge.ojek {color:rgb(var(--ride))}
+.badge.jualan {color:rgb(var(--sell))}
+.badge.jasa {color:rgb(var(--service))}
+
+.btn-primary {position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));min-height:52px;padding:0 20px;border-radius:26px;background:rgb(var(--accent));color:rgb(var(--on-accent));display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(35,28,20,.25);border:0;font:inherit;font-weight:600}
+
+/* ── Behaviour the spec adds to the drawn screen ─────────────────────────
+   The location line, the states, the sheets. The drawn rules above are
+   unchanged; these only carry what the drawing could not show. */
+
+.locline {display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid rgb(var(--line));background:rgb(var(--raised));font-size:14px;color:rgb(var(--muted))}
+
+.locbtn {min-height:36px;padding:0 12px;border-radius:18px;border:0;background:rgb(var(--accent));color:rgb(var(--on-accent));font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer}
+
+.empty-title {font-size:16px;font-weight:600;margin:8px 0 0;color:rgb(var(--fg))}
+.empty-sub {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:0 0 12px;max-width:280px}
+.state-empty,.state-error {padding:48px 16px}
+
+/* Skeleton bars on the loading cards */
+.sk {display:inline-block;height:14px;border-radius:6px}
+.sk-pin {width:40px;height:40px;border-radius:12px;flex:none}
+
+/* Sheets: a bottom sheet over the list. The backdrop tap closes it. */
+.sheet-back {position:fixed;inset:0;background:rgba(35,28,20,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet-back[hidden] {display:none}
+.sheet {width:100%;max-width:26rem;max-height:85%;overflow:auto;background:rgb(var(--surface));border-radius:20px 20px 0 0;padding:8px 20px calc(20px + env(safe-area-inset-bottom,0px));color:rgb(var(--fg));font-size:16px;line-height:24px}
+.sheet-grab {width:40px;height:4px;border-radius:2px;background:rgb(var(--line));margin:4px auto 12px}
+.sheet-top {display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+.sheet-title {font-size:16px;font-weight:600}
+.sheet-cancel {border:0;background:none;color:rgb(var(--muted));font:inherit;font-size:14px;min-height:44px;min-width:44px;padding:0;cursor:pointer}
+.sheet-body {padding-bottom:8px}
+.d-cat {margin:0 0 8px}
+.d-name {font-size:20px;font-weight:700;margin:0 0 4px}
+.d-note {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:0 0 12px}
+.d-meta {font-size:14px;color:rgb(var(--muted));margin:0 0 12px}
+.d-map {display:inline-block;min-height:44px;line-height:44px;font-size:14px;font-weight:600;color:rgb(var(--accent));text-decoration:none;margin:0 0 8px}
+.d-msg {font-size:14px;color:rgb(var(--food));margin:0 0 8px}
+.d-act {width:100%;margin:0 0 8px;color:rgb(var(--danger))}
+
+/* The add form */
+.flabel {display:block;font-size:14px;font-weight:500;margin:12px 0 6px;color:rgb(var(--fg))}
+.fcount {font-weight:400;color:rgb(var(--muted))}
+.cat-chips {display:flex;gap:8px;flex-wrap:wrap}
+.chip.cat.on {background:rgb(var(--fg));color:rgb(var(--ground));border-color:rgb(var(--fg))}
+.fhint {font-size:13px;line-height:18px;color:rgb(var(--muted));margin:6px 0 12px}
+.ferr {font-size:14px;color:rgb(var(--danger));margin:12px 0 0}
+#add-form .btn-primary {width:100%;margin:16px 0 0}
+
+@media (prefers-reduced-motion: reduce) {
+  .zone,.sheet {transition:none;animation:none}
+}

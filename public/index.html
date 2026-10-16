@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+
   <script>
   // usernode-dev-console@1
   (function () {
@@ -64,7 +64,7 @@
   })();
   </script>
   <title>tryconnect</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%237c3aed'/><circle cx='50' cy='50' r='18' fill='white'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 5a35 35 0 00-35 35c0 26 35 55 35 55s35-29 35-55A35 35 0 0050 5z' fill='%23c2410c'/><circle cx='50' cy='40' r='13' fill='white'/></svg>">
   <!-- Tailwind, PRECOMPILED for this app (was cdn.tailwindcss.com's
        in-browser engine plus an inline tailwind.config here). The config
        moved to tailwind.config.js in the repo root; npm run build compiles
@@ -121,25 +121,494 @@
        Change them where behaviour needs it; do not redraw them. -->
   <div data-spec-screen="1">
     <div class="app">
-    <div class="top"><h1>tryconnect</h1><p class="sub">12 zona peluang cuan, paling dekat dulu</p></div>
-    <div class="chips"><button class="chip on">Semua</button><button class="chip">Makanan</button><button class="chip">Ojek</button><button class="chip">Jualan</button><button class="chip">Jasa</button></div>
-    <p class="section-label">Dekat kamu</p>
+    <div class="top"><h1>tryconnect</h1><p class="sub" id="count-line">Zona peluang cuan</p></div>
+    <div class="chips" id="chips">
+      <button class="chip on" data-filter="all" type="button">Semua</button>
+      <button class="chip" data-filter="makanan" type="button">Makanan</button>
+      <button class="chip" data-filter="ojek" type="button">Ojek</button>
+      <button class="chip" data-filter="jualan" type="button">Jualan</button>
+      <button class="chip" data-filter="jasa" type="button">Jasa</button>
+    </div>
+    <p class="section-label" id="section-label"></p>
 
-    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Pasar Pagi Kebon Jeruk</span><span class="dist">350 m</span></div><p class="note">Ramai jam 5 sampai 8 pagi, pesanan sarapan banyak.</p><div class="meta"><span class="badge b1">Makanan</span><span>Ditambah kamu</span></div></div></div>
+    <!-- The location line: hidden until the list has distances it can offer
+         to sort, or until permission is missing and the list fell back to
+         newest first. -->
+    <div id="loc-line" class="locline" hidden>
+      <span id="loc-text"></span>
+      <button class="locbtn" id="loc-btn" type="button">Pakai lokasi saya</button>
+    </div>
 
-    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Stasiun Palmerah</span><span class="dist">1,2 km</span></div><p class="note">Penumpang keluar jam 17.00 sampai 19.00, antrean ojek cepat jalan.</p><div class="meta"><span class="badge b2">Ojek</span><span>Ditambah Rina Contoh</span></div></div></div>
+    <!-- Loading: the list's own shape, skeleton bars where the text goes. -->
+    <div id="state-loading" hidden aria-live="polite">
+      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk" style="width:60%">&nbsp;</span><span class="sk" style="width:15%">&nbsp;</span></div><p class="note"><span class="sk" style="display:block;height:14px;width:90%">&nbsp;</span></p><div class="meta"><span class="sk" style="width:70px">&nbsp;</span><span class="sk" style="width:90px">&nbsp;</span></div></div></div>
+      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk" style="width:45%">&nbsp;</span><span class="sk" style="width:15%">&nbsp;</span></div><p class="note"><span class="sk" style="display:block;height:14px;width:80%">&nbsp;</span></p><div class="meta"><span class="sk" style="width:70px">&nbsp;</span><span class="sk" style="width:90px">&nbsp;</span></div></div></div>
+      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk" style="width:55%">&nbsp;</span><span class="sk" style="width:15%">&nbsp;</span></div><p class="note"><span class="sk" style="display:block;height:14px;width:85%">&nbsp;</span></p><div class="meta"><span class="sk" style="width:70px">&nbsp;</span><span class="sk" style="width:90px">&nbsp;</span></div></div></div>
+      <div class="zone"><div class="sk sk-pin"></div><div class="zb"><div class="zt"><span class="sk" style="width:50%">&nbsp;</span><span class="sk" style="width:15%">&nbsp;</span></div><p class="note"><span class="sk" style="display:block;height:14px;width:75%">&nbsp;</span></p><div class="meta"><span class="sk" style="width:70px">&nbsp;</span><span class="sk" style="width:90px">&nbsp;</span></div></div></div>
+    </div>
 
-    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Lapangan Car Free Day</span><span class="dist">2,4 km</span></div><p class="note">Minggu pagi, cocok untuk jual minuman dingin dan kaos.</p><div class="meta"><span class="badge b3">Jualan</span><span>Ditambah Bagas Contoh</span></div></div></div>
+    <!-- Empty: only after a load that worked and found nothing. -->
+    <div id="state-empty" class="state-empty" hidden>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:rgb(var(--accent))"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <p class="empty-title">Belum ada zona</p>
+      <p class="empty-sub">Tambahkan tempat ramai yang kamu tahu, biar yang lain ikut cari cuan.</p>
+      <button class="btn-primary empty-add" type="button">Tambah zona</button>
+    </div>
 
-    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Kompleks Ruko Meruya</span><span class="dist">3,1 km</span></div><p class="note">Banyak kantor kecil, butuh jasa cuci motor dan servis AC.</p><div class="meta"><span class="badge b4">Jasa</span><span>Ditambah Dewi Contoh</span></div></div></div>
+    <!-- Error: only when the load failed. -->
+    <div id="state-error" class="state-error" hidden>
+      <p class="empty-title">Zona tidak bisa dimuat</p>
+      <p class="empty-sub">Cek koneksi kamu lalu coba lagi.</p>
+      <button class="btn-primary" id="retry-btn" type="button">Coba lagi</button>
+    </div>
 
-    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Terminal Kalideres</span><span class="dist">5,8 km</span></div><p class="note">Sabtu malam penuh pemudik, tarif antar jauh lebih tinggi.</p><div class="meta"><span class="badge b2">Ojek</span><span>Ditambah kamu</span></div></div></div>
+    <!-- Empty filter result: a chip found nothing. -->
+    <div id="state-filter-empty" class="state-empty" hidden>
+      <p class="empty-title">Belum ada zona <span id="filter-name"></span></p>
+      <button class="btn-secondary" id="see-all-btn" type="button">Lihat semua</button>
+    </div>
 
-    <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn">Bazar Kampus Trisakti</span><span class="dist">7,0 km</span></div><p class="note">Bazar bulanan, sewa lapak murah untuk pemula.</p><div class="meta"><span class="badge b3">Jualan</span><span>Ditambah Rina Contoh</span></div></div></div>
+    <!-- The rendered list. One drawn row stays as the template to copy. -->
+    <div id="zone-list" data-zone-list></div>
+    <template id="zone-row">
+      <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn"></span><span class="dist"></span></div><p class="note"></p><div class="meta"><span class="badge"></span><span class="by"></span></div></div></div>
+    </template>
 
-    <button class="btn-primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Tambah zona</button>
+    <button class="btn-primary" id="add-fab" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Tambah zona</button>
+
+    <!-- ── Add sheet ── -->
+    <div class="sheet-back" id="add-sheet" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Tambah zona">
+        <div class="sheet-grab"></div>
+        <div class="sheet-top">
+          <button class="sheet-cancel" id="add-cancel" type="button">Batal</button>
+          <span class="sheet-title">Tambah zona</span>
+        </div>
+        <form id="add-form">
+          <label class="flabel" for="f-name">Nama zona</label>
+          <input class="field" id="f-name" maxlength="60" placeholder="contoh: Stasiun Palmerah" autocomplete="off">
+          <p class="flabel">Jenis cuan</p>
+          <div class="cat-chips" id="cat-chips">
+            <button class="chip cat" type="button" data-cat="makanan">Makanan</button>
+            <button class="chip cat" type="button" data-cat="ojek">Ojek</button>
+            <button class="chip cat" type="button" data-cat="jualan">Jualan</button>
+            <button class="chip cat" type="button" data-cat="jasa">Jasa</button>
+          </div>
+          <label class="flabel" for="f-note">Catatan singkat <span id="note-count" class="fcount"></span></label>
+          <textarea class="field" id="f-note" rows="2" maxlength="140" placeholder="contoh: Ramai jam 5 sampai 8 pagi"></textarea>
+          <p class="flabel">Lokasi</p>
+          <button class="locbtn" id="f-loc-btn" type="button">Pakai lokasi saya sekarang</button>
+          <p class="fhint" id="f-loc-hint">Zona ditandai di tempat kamu berdiri sekarang.</p>
+          <p class="ferr" id="add-err" hidden></p>
+          <button class="btn-primary w-full" id="add-save" type="submit">Simpan zona</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ── Detail sheet ── -->
+    <div class="sheet-back" id="detail-sheet" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="Detail zona">
+        <div class="sheet-grab"></div>
+        <div class="sheet-top">
+          <button class="sheet-cancel" id="detail-close" type="button">Tutup</button>
+        </div>
+        <div class="sheet-body">
+          <p class="d-cat"><span class="badge" id="d-badge"></span></p>
+          <p class="d-name" id="d-name"></p>
+          <p class="d-note" id="d-note"></p>
+          <p class="d-meta" id="d-meta"></p>
+          <a class="d-map" id="d-map" target="_blank" rel="noopener">Buka di peta</a>
+          <p class="d-msg" id="d-msg" hidden></p>
+          <button class="btn-secondary d-act" id="d-delete" type="button" hidden>Hapus zona</button>
+          <button class="btn-secondary d-act" id="d-report" type="button" hidden>Laporkan</button>
+        </div>
+      </div>
+    </div>
     </div>
   </div>
   <!-- /usernode-spec-screens@1 -->
+
+  <script>
+  (function () {
+    'use strict';
+
+    // ── The page's own data ──────────────────────────────────────────────
+    var isDemo = new URLSearchParams(location.search).get('demo') === '1';
+    var API = '/api/zones' + (isDemo ? '?demo=1' : '');
+    var CATEGORIES = { makanan: 'Makanan', ojek: 'Ojek', jualan: 'Jualan', jasa: 'Jasa' };
+    var FILTERS = ['all', 'makanan', 'ojek', 'jualan', 'jasa'];
+    var zones = [];
+    var origin = null;          // the viewer's position {lat,lng}, or demoOrigin in the demo
+    var filter = 'all';
+    var token = new URLSearchParams(location.search).get('token') || '';
+
+    function $(id) { return document.getElementById(id); }
+    function api(path, opts) {
+      opts = opts || {};
+      opts.headers = Object.assign({ 'x-usernode-token': token, 'Content-Type': 'application/json' }, opts.headers || {});
+      return fetch(path, opts);
+    }
+
+    // ── Distance and time, in Indonesian ────────────────────────────────
+    function distanceKm(a, b) {
+      var R = 6371, rad = Math.PI / 180;
+      var dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+      var h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    }
+    function fmtDist(km) {
+      if (km < 1) return Math.round(km * 1000) + ' m';
+      var s = km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km).toString();
+      return s + ' km';
+    }
+    function fmtWhen(iso) {
+      var d = new Date(iso), n = Date.now();
+      var mins = Math.max(0, Math.round((n - d.getTime()) / 60000));
+      if (mins < 1) return 'baru saja';
+      if (mins < 60) return mins + ' menit lalu';
+      var hrs = Math.round(mins / 60);
+      if (hrs < 24) return hrs + ' jam lalu';
+      var days = Math.round(hrs / 24);
+      if (days < 30) return days + ' hari lalu';
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    // ── Sorting and rendering ───────────────────────────────────────────
+    // Distances read off `origin`, which is the demo's stand-in until a
+    // real position is read. Zones without coordinates go last, newest
+    // first. Without any position the whole list is newest first.
+    function sorted() {
+      var list = zones.slice();
+      if (filter !== 'all') list = list.filter(function (z) { return z.category === filter; });
+      if (!origin) return list;
+      var withPos = [], without = [];
+      list.forEach(function (z) {
+        (z.lat != null && z.lng != null ? withPos : without).push(z);
+      });
+      withPos.sort(function (a, b) {
+        return distanceKm(origin, a) - distanceKm(origin, b) || new Date(b.created_at) - new Date(a.created_at);
+      });
+      without.sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+      return withPos.concat(without);
+    }
+
+    function badgeCat(cat) { return CATEGORIES[cat] || cat; }
+
+    function renderList() {
+      var list = sorted();
+      var listEl = $('zone-list');
+      listEl.textContent = '';
+      var noPosShown = false;
+      var tpl = $('zone-row');
+      list.forEach(function (z) {
+        if (origin && z.lat == null && z.lng == null && !noPosShown) {
+          // Zones saved without a location come last, under their own label.
+          var head = document.createElement('p');
+          head.className = 'section-label noloc-head';
+          head.textContent = 'Tanpa lokasi';
+          listEl.appendChild(head);
+          noPosShown = true;
+        }
+        var row = tpl.content.firstElementChild.cloneNode(true);
+        row.dataset.zoneId = z.id;
+        row.querySelector('.zn').textContent = z.name;
+        row.querySelector('.dist').textContent =
+          (z.lat != null && z.lng != null && origin) ? fmtDist(distanceKm(origin, z)) : '';
+        row.querySelector('.note').textContent = z.note || '';
+        var badge = row.querySelector('.badge');
+        badge.textContent = badgeCat(z.category);
+        badge.classList.add(z.category);
+        row.querySelector('.by').textContent = z.mine ? 'Ditambah kamu' : 'Ditambah ' + z.author_username;
+        row.addEventListener('click', function () { openDetail(z); });
+        listEl.appendChild(row);
+      });
+
+      // One count line: "12 zona peluang cuan, paling dekat dulu" — the
+      // drawn value, emptied here and set from the data.
+      var n = zones.length;
+      $('count-line').textContent = n === 0 ? 'Zona peluang cuan'
+        : n + ' zona peluang cuan, ' + (origin ? 'paling dekat dulu' : 'terbaru dulu');
+
+      // The section label names the list; the demo words are marked so
+      // Homeroom can hide them where the demo is labelled its own way.
+      var label = $('section-label');
+      label.textContent = '';
+      if (origin) {
+        label.append('Dekat kamu');
+      } else {
+        label.append('Terbaru');
+      }
+      if (isDemo) {
+        var d = document.createElement('span');
+        d.setAttribute('data-usernode-demo-note', '');
+        d.textContent = ' · Staging demo';
+        label.appendChild(d);
+      }
+
+      // The location line: an offer to sort, or the fallback's explanation.
+      // Not shown over an empty list, where there is nothing to sort.
+      var locLine = $('loc-line');
+      var locText = $('loc-text');
+      var locBtn = $('loc-btn');
+      if (zones.length === 0) {
+        locLine.hidden = true;
+        label.textContent = '';
+      } else if (origin && !usingDemoOrigin) {
+        locLine.hidden = true;
+      } else if (origin && usingDemoOrigin) {
+        locText.textContent = 'Urutan memakai titik demo.';
+        locBtn.hidden = false; locBtn.textContent = 'Pakai lokasi saya';
+        locLine.hidden = false;
+      } else {
+        locText.textContent = 'Urutkan dari yang paling dekat';
+        locBtn.hidden = false; locBtn.textContent = 'Pakai lokasi saya';
+        locLine.hidden = false;
+      }
+
+      // The four states, exactly one at a time.
+      var noFilterHit = list.length === 0 && zones.length > 0;
+      $('state-loading').hidden = true;
+      $('state-empty').hidden = !(zones.length === 0 && loaded);
+      $('state-error').hidden = !loadFailed;
+      $('state-filter-empty').hidden = !noFilterHit;
+      $('zone-list').hidden = list.length === 0;
+      if (noFilterHit) $('filter-name').textContent = badgeCat(filter);
+      // The screen's one primary button: hidden when the empty state's
+      // own button is on the page, which is the only filled one then.
+      $('add-fab').hidden = zones.length === 0 && loaded || loadFailed;
+      $('add-fab').style.display = $('add-fab').hidden ? 'none' : '';
+    }
+
+    var loaded = false, loadFailed = false, usingDemoOrigin = false;
+    function load() {
+      loadFailed = false;
+      loaded = false;
+      $('state-loading').hidden = false;
+      $('state-empty').hidden = true;
+      $('state-error').hidden = true;
+      $('state-filter-empty').hidden = true;
+      $('zone-list').hidden = true;
+      $('add-fab').style.display = 'none';
+      api(API).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function (data) {
+        zones = data.zones || [];
+        if (data.demoOrigin) { origin = data.demoOrigin; usingDemoOrigin = true; }
+        loaded = true;
+        renderList();
+      }).catch(function () {
+        loadFailed = true;
+        loaded = false;
+        renderList();
+      });
+    }
+
+    // ── Location permission, through the bridge ─────────────────────────
+    // Never asked at startup: the app only reads the position after a tap
+    // on "Pakai lokasi saya". `active: false` means granted and the frame
+    // is about to reload — stop and let it land.
+    function askLocation(after) {
+      var un = window.usernode;
+      if (!un || !un.requestPermission) { after(null); return; }
+      un.requestPermission('geolocation').then(function (r) {
+        if (r.state !== 'granted' || r.active === false) { after(null); return; }
+        navigator.geolocation.getCurrentPosition(
+          function (pos) { after({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+          function () { after(null); },
+          { timeout: 10000, maximumAge: 60000 });
+      }).catch(function () { after(null); });
+    }
+
+    function useMyLocation() {
+      var btn = $('loc-btn');
+      btn.textContent = 'Memuat…';
+      askLocation(function (pos) {
+        btn.textContent = 'Pakai lokasi saya';
+        if (pos) {
+          origin = pos; usingDemoOrigin = false; knownOrigin = pos;
+          renderList();
+        } else {
+          origin = null; usingDemoOrigin = false;
+          renderList();
+        }
+      });
+    }
+
+    // ── The add sheet ───────────────────────────────────────────────────
+    var chosenCat = null, chosenPos = null;
+    // A visitor with no account is asked to make one when they tap
+    // Tambah zona, before the sheet opens. The probe is an empty POST: a
+    // signed-in person gets the validation answer (400), a guest gets 401
+    // account_required, and nothing is written either way.
+    function openAdd() {
+      api('/api/zones' + (isDemo ? '?demo=1' : ''), { method: 'POST', body: '{}' }).then(function (r) {
+        if (r.status === 401) {
+          if (window.usernode && window.usernode.askForAccount) window.usernode.askForAccount({ action: 'tambah zona' });
+          return;
+        }
+        openAddSheet();
+      }).catch(function () {});
+    }
+    function openAddSheet() {
+      chosenCat = null; chosenPos = null;
+      $('f-name').value = ''; $('f-note').value = ''; $('note-count').textContent = '0/140';
+      $('f-loc-hint').textContent = 'Zona ditandai di tempat kamu berdiri sekarang.';
+      $('f-loc-btn').textContent = 'Pakai lokasi saya sekarang';
+      $('add-err').hidden = true;
+      var chips = $('cat-chips').querySelectorAll('.chip');
+      chips.forEach(function (c) { c.classList.remove('on'); });
+      $('add-sheet').hidden = false;
+      $('add-fab').style.display = 'none';
+      $('f-name').focus();
+    }
+    function closeAdd() { $('add-sheet').hidden = true; renderList(); }
+
+    $('cat-chips').addEventListener('click', function (e) {
+      var chip = e.target.closest('.chip');
+      if (!chip) return;
+      chosenCat = chip.dataset.cat;
+      $('cat-chips').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === chip); });
+    });
+    $('f-note').addEventListener('input', function () {
+      var n = $('f-note').value.length;
+      $('note-count').textContent = n + '/140';
+    });
+    $('f-loc-btn').addEventListener('click', function () {
+      var b = $('f-loc-btn');
+      b.textContent = 'Memuat…';
+      askLocation(function (pos) {
+        chosenPos = pos;
+        if (pos) {
+          b.textContent = 'Lokasi siap';
+          $('f-loc-hint').textContent = 'Zona ditandai di tempat kamu berdiri sekarang.';
+        } else {
+          b.textContent = 'Coba lagi';
+          $('f-loc-hint').textContent = 'Lokasi tidak tersedia, zona disimpan tanpa jarak.';
+        }
+      });
+    });
+    $('add-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = $('f-name').value.trim();
+      var note = $('f-note').value.trim();
+      var err = $('add-err');
+      err.hidden = true;
+      if (!name) { err.textContent = 'Nama zona wajib diisi.'; err.hidden = false; return; }
+      if (!chosenCat) { err.textContent = 'Pilih salah satu jenis cuan.'; err.hidden = false; return; }
+      var body = { name: name, category: chosenCat, note: note };
+      if (chosenPos) { body.lat = chosenPos.lat; body.lng = chosenPos.lng; }
+      $('add-save').disabled = true;
+      $('add-save').textContent = 'Menyimpan…';
+      api(API, { method: 'POST', body: JSON.stringify(body) }).then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok) throw new Error(data.error || 'Gagal menyimpan zona.');
+          return data;
+        });
+      }).then(function (data) {
+        zones.push(data.zone);
+        closeAdd();
+        if (data.zone.lat != null && data.zone.lng != null && !origin) origin = null;
+        renderList();
+      }).catch(function (ex) {
+        // The sheet stays open, everything typed stays, a short message shows.
+        err.textContent = ex.message || 'Gagal menyimpan zona. Coba lagi.';
+        err.hidden = false;
+      }).then(function () {
+        $('add-save').disabled = false;
+        $('add-save').textContent = 'Simpan zona';
+      });
+    });
+
+    // ── The detail sheet ────────────────────────────────────────────────
+    var openZone = null;
+    function openDetail(z) {
+      openZone = z;
+      $('d-badge').textContent = badgeCat(z.category);
+      $('d-badge').className = 'badge ' + z.category;
+      $('d-name').textContent = z.name;
+      $('d-note').textContent = z.note || '';
+      var meta = badgeCat(z.category) + ' · Ditambah ' + (z.mine ? 'kamu' : z.author_username) + ' · ' + fmtWhen(z.created_at);
+      if (z.lat != null && z.lng != null && origin) meta = fmtDist(distanceKm(origin, z)) + ' · ' + meta;
+      $('d-meta').textContent = meta;
+      var map = $('d-map');
+      if (z.lat != null && z.lng != null) {
+        map.hidden = false;
+        map.href = 'https://www.google.com/maps?q=' + z.lat + ',' + z.lng;
+      } else {
+        map.hidden = true;
+      }
+      // The server's `mine` flag decides which of the two actions shows.
+      $('d-delete').hidden = !z.mine;
+      $('d-report').hidden = !!z.mine;
+      $('d-msg').hidden = true;
+      $('detail-sheet').hidden = false;
+    }
+    $('d-delete').addEventListener('click', function () {
+      if (!openZone) return;
+      if (!window.confirm('Hapus zona ini?')) return;
+      api('/api/zones/' + openZone.id, { method: 'DELETE', headers: { 'x-usernode-token': token } }).then(function (r) {
+        if (!r.ok) return;
+        zones = zones.filter(function (z) { return z.id !== openZone.id; });
+        openZone = null;
+        $('detail-sheet').hidden = true;
+        renderList();
+      });
+    });
+    $('d-report').addEventListener('click', function () {
+      if (!openZone) return;
+      api('/api/zones/' + openZone.id + '/report', { method: 'POST', headers: { 'x-usernode-token': token }, body: '{}' }).then(function (r) {
+        $('d-msg').hidden = false;
+        $('d-msg').textContent = r.ok ? 'Laporan terkirim' : 'Laporan gagal dikirim.';
+        if (r.ok) $('d-report').hidden = true;
+      });
+    });
+
+    // ── Wiring ──────────────────────────────────────────────────────────
+    $('chips').addEventListener('click', function (e) {
+      var chip = e.target.closest('.chip');
+      if (!chip) return;
+      filter = chip.dataset.filter;
+      $('chips').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === chip); });
+      renderList();
+    });
+    $('see-all-btn').addEventListener('click', function () {
+      filter = 'all';
+      $('chips').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c.dataset.filter === 'all'); });
+      renderList();
+    });
+    $('loc-btn').addEventListener('click', useMyLocation);
+    $('add-fab').addEventListener('click', openAdd);
+    document.querySelector('.empty-add').addEventListener('click', openAdd);
+    $('retry-btn').addEventListener('click', load);
+    $('add-cancel').addEventListener('click', closeAdd);
+    $('detail-close').addEventListener('click', function () { $('detail-sheet').hidden = true; openZone = null; });
+    // A tap on the dimmed backdrop closes the sheet it belongs to.
+    document.querySelectorAll('.sheet-back').forEach(function (back) {
+      back.addEventListener('click', function (e) {
+        if (e.target !== back) return;
+        back.hidden = true;
+        if (back.id === 'detail-sheet') openZone = null;
+        renderList();
+      });
+    });
+
+    // A location permission already granted reads its position straight
+    // away, so the list can be nearest-first without another tap.
+    if (window.usernode && window.usernode.getPermission) {
+      window.usernode.getPermission('geolocation').then(function (r) {
+        if (r && r.state === 'granted' && r.active) {
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            usingDemoOrigin = false;
+            renderList();
+          }, function () {}, { timeout: 10000, maximumAge: 60000 });
+        }
+      }).catch(function () {});
+    }
+
+    load();
+  })();
+  </script>
 </body>
 </html>
