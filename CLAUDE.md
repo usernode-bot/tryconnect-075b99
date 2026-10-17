@@ -136,6 +136,10 @@ it, and updates it when a request changes the look on purpose.
   fall inside Indonesia's rough bounds (`cleanCoords` in server.js).
 - Sorting happens in the browser from `GET /api/zones` rows; the server
   never sorts by distance.
+- The Ojek chip is the one-tap driver-availability menu: it shows only
+  ojek zones within 100 m of `origin` (rounded metres, like the card's
+  distance), with a count line above the list, and nothing at all when
+  the viewer's location is unknown. Other chips ignore the radius.
 - `zone_reports` is marked `staging:private`; everything else is public.
 - The `?demo=1` demo is staging-only: boot seeds eight fake-author zones
   with fixed `demo_key`s, and the viewer's own two zones are written once

@@ -238,6 +238,7 @@
     var API = '/api/zones' + (isDemo ? '?demo=1' : '');
     var CATEGORIES = { makanan: 'Makanan', ojek: 'Ojek', jualan: 'Jualan', jasa: 'Jasa' };
     var FILTERS = ['all', 'makanan', 'ojek', 'jualan', 'jasa'];
+    var OJEK_RADIUS_M = 100;   // the Ojek chip answers "driver within 100 m?"
     var zones = [];
     var origin = null;          // the viewer's position {lat,lng}, or demoOrigin in the demo
     var filter = 'all';
@@ -256,6 +257,11 @@
       var dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
       var h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
       return 2 * R * Math.asin(Math.sqrt(h));
+    }
+    // A zone is "in range" when its metres, rounded the same way the card
+    // prints them, stay within the Ojek chip's fixed radius.
+    function withinOjekRadius(z) {
+      return Math.round(distanceKm(origin, z) * 1000) <= OJEK_RADIUS_M;
     }
     function fmtDist(km) {
       if (km < 1) return Math.round(km * 1000) + ' m';
@@ -281,6 +287,9 @@
     function sorted() {
       var list = zones.slice();
       if (filter !== 'all') list = list.filter(function (z) { return z.category === filter; });
+      // Under Ojek the 100 m circle is the point: with no position to
+      // measure from, nothing shows and the loc-line asks for one.
+      if (filter === 'ojek' && !origin) return [];
       if (!origin) return list;
       var withPos = [], without = [];
       list.forEach(function (z) {
@@ -290,6 +299,10 @@
         return distanceKm(origin, a) - distanceKm(origin, b) || new Date(b.created_at) - new Date(a.created_at);
       });
       without.sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+      // The Ojek chip is the one-tap "drivers near me" menu: only the ojek
+      // zones inside the 100 m radius, and nothing at all without a position
+      // to measure from.
+      if (filter === 'ojek') return withPos.filter(withinOjekRadius);
       return withPos.concat(without);
     }
 
@@ -334,12 +347,19 @@
       // Homeroom can hide them where the demo is labelled its own way.
       var label = $('section-label');
       label.textContent = '';
-      if (origin) {
+      label.classList.remove('radius-count');
+      if (filter === 'ojek' && origin) {
+        // The chip's answer: how many ojek zones sit within 100 m.
+        if (list.length > 0) {
+          label.textContent = list.length + ' ojek dalam 100 m';
+          label.classList.add('radius-count');
+        }
+      } else if (origin) {
         label.append('Dekat kamu');
       } else {
         label.append('Terbaru');
       }
-      if (isDemo) {
+      if (isDemo && label.textContent) {
         var d = document.createElement('span');
         d.setAttribute('data-usernode-demo-note', '');
         d.textContent = ' · Staging demo';
@@ -361,19 +381,24 @@
         locBtn.hidden = false; locBtn.textContent = 'Pakai lokasi saya';
         locLine.hidden = false;
       } else {
-        locText.textContent = 'Urutkan dari yang paling dekat';
+        locText.textContent = filter === 'ojek'
+          ? 'Ojek dalam 100 m butuh lokasi kamu'
+          : 'Urutkan dari yang paling dekat';
         locBtn.hidden = false; locBtn.textContent = 'Pakai lokasi saya';
         locLine.hidden = false;
       }
 
-      // The four states, exactly one at a time.
-      var noFilterHit = list.length === 0 && zones.length > 0;
+      // The four states, exactly one at a time. Under Ojek with no
+      // location the loc-line's ask is the whole answer, so the empty
+      // block stays off.
+      var noFilterHit = list.length === 0 && zones.length > 0 && !(filter === 'ojek' && !origin);
       $('state-loading').hidden = true;
       $('state-empty').hidden = !(zones.length === 0 && loaded);
       $('state-error').hidden = !loadFailed;
       $('state-filter-empty').hidden = !noFilterHit;
       $('zone-list').hidden = list.length === 0;
-      if (noFilterHit) $('filter-name').textContent = badgeCat(filter);
+      if (noFilterHit) $('filter-name').textContent =
+        filter === 'ojek' ? 'Ojek dalam 100 m' : badgeCat(filter);
       // The screen's one primary button: hidden when the empty state's
       // own button is on the page, which is the only filled one then.
       $('add-fab').hidden = zones.length === 0 && loaded || loadFailed;
@@ -427,7 +452,7 @@
       askLocation(function (pos) {
         btn.textContent = 'Pakai lokasi saya';
         if (pos) {
-          origin = pos; usingDemoOrigin = false; knownOrigin = pos;
+          origin = pos; usingDemoOrigin = false;
           renderList();
         } else {
           origin = null; usingDemoOrigin = false;
