@@ -103,27 +103,43 @@ added. Guests can browse; every write needs an account.
 
 ## Design
 
-The app's look, set by the first version's spec. Every later change follows
-it, and updates it when a request changes the look on purpose.
+The app's look: a **fixed dark, luxurious style** ("Buat lebih gelap &amp;
+mewah gayanya", rev. 2 of the redesign spec). The darkness is the point of
+the app's identity, so it is one fixed look: the app does NOT follow the
+viewer's Homeroom light/dark theme — the theme script in `public/index.html`
+keeps `dark` on `<html>` permanently, and the tokens in
+`styles/tailwind-input.css` hold the same values in `:root` and `.dark`.
+Every later change follows this look, and updates it when a request changes
+it on purpose.
 
-- **Palette:** warm neutrals with one action colour, a market orange
-  (accent 194 65 12 light / 251 146 60 dark; on-accent white / near-black
-  40 16 4). Neutrals: warm greys tinted with ink, not grey-grey — ground
-  250 247 242 / 24 20 16, surface 255 255 255 / 36 31 25, raised 243 238
-  230 / 50 43 35, line 232 224 212 / 64 56 46, fg 35 28 20 / 245 239 230,
-  muted 98 87 74 / 184 172 156.
+- **Palette:** deep warm near-black surfaces with one calm gold accent
+  (accent 212 175 55; on-accent 24 18 8, near-black brown — never white on
+  gold). Ground 18 16 13, surface 26 23 19, raised 38 33 26, line 54 47 37,
+  fg 240 234 222 (warm ivory), muted 161 150 133, danger 248 113 113.
+  Elevation/motion tokens live beside them: `--accent-ink` 226 191 70 (gold
+  text on a gold tint), `--shadow-card`, `--shadow-fab` (dark shadow + gold
+  glow), `--shadow-sheet`, `--ease-out`, `--dur-fast` 160 ms,
+  `--dur-med` 240 ms.
 - **Category colours** (badge text on a raised surface, each kind keeps its
-  colour wherever it shows): food 22 101 52 / 74 222 128, ride 29 78 216 /
-  147 180 253, sell 133 77 14 / 252 211 77, service 109 40 217 / 196 181
-  253. These are the only extra colours; everything else is the tokens.
+  colour wherever it shows): food 74 222 128, ride 147 180 253, sell 252
+  211 77, service 196 181 253. These are the only extra colours; everything
+  else is the tokens.
 - **Signature element:** the zone card shaped like a location tag — square
   at the top left corner (6px, where it hangs from a pin) and rounded on
-  the other three corners (20px), with a line-drawn map pin in the action
-  orange at its left. The kind of cuan is a small coloured badge on the
-  card's meta line.
+  the other three corners (20px), with a line-drawn gold map pin inside a
+  faint gold disc (`.pin-wrap`, 12px radius) at its left. The kind of cuan
+  is a small coloured badge on the card's meta line.
+- **Look details:** hairline card borders (`--line` at 90%), a one-pixel
+  top highlight (`inset 0 1px 0 rgba(255,255,255,.04)`), deep soft shadows,
+  active chips in a gold tint (accent/14% + accent-ink text), primary
+  buttons in gold with a soft gold glow, hover glows only under
+  `@media (hover:hover)`, and short fade/slide transitions (160–240 ms,
+  `--ease-out`) that `prefers-reduced-motion` turns off.
 - **Type scale:** `text-title`, `text-heading`, `text-body`, `text-small`.
   Family is the system rounded face (ui-rounded), then system-ui; set in
-  `tailwind.config.js` and on `.app` in `public/screens.css`.
+  `tailwind.config.js` and on `.app` in `public/screens.css`. Display
+  headings are heavier and tracked tight: h1 30/36 w800 -0.02em, zone names
+  -0.01em, detail name 22/700 -0.02em.
 - The app's text is in Indonesian (lang="id"). One word per thing: zona,
   jenis cuan, catatan singkat, Tambah zona, Simpan zona, update, Update
   terbaru, Kirim update, Foto (boleh kosong), Tambah foto, Ganti foto,

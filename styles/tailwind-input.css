@@ -15,52 +15,71 @@
 /* ── Colour tokens ────────────────────────────────────────────────────────
  * This app's palette, defined once. Each value is "R G B"; tailwind.config.js
  * names them (bg-ground, bg-surface, text-fg, text-muted, border-line,
- * bg-accent with text-on-accent, ...). :root is the light look, and .dark,
- * which the theme script in public/index.html sets on <html>, the dark one.
+ * bg-accent with text-on-accent, ...).
  *
- * Re-theme the app HERE: change the values, keep the names. The defaults
- * (warm greys, one teal accent) are a quiet starting point, not a look.
- * Keep every text pair at 4.5:1 or more in both looks: fg and muted on
- * ground, surface and raised; accent and danger on ground and surface;
- * on-accent on accent; on-danger on danger.
+ * The app's look is FIXED DARK by design ("lebih gelap & mewah"): deep warm
+ * near-black surfaces with one calm gold accent. :root and .dark hold the
+ * SAME values, so the app is dark whatever class sits on <html> (the theme
+ * script in public/index.html keeps .dark on for Tailwind's dark: variants).
+ * CLAUDE.md's "## Design" records this fixed look.
+ *
+ * Keep every text pair at 4.5:1 or more: fg and muted on ground, surface
+ * and raised; accent on ground and surface; on-accent on accent;
+ * on-danger on danger; accent-ink on its tint.
  *
  * Adopting the native UI kit later? Point its --un-accent and
  * --un-accent-contrast at the accent and on-accent tokens.
  */
 @layer base {
   :root {
-    --ground: 250 247 242;    /* the page */
-    --surface: 255 255 255;   /* lists, cards, fields */
-    --raised: 243 238 230;    /* hovers, badges */
-    --fg: 35 28 20;           /* text */
-    --muted: 98 87 74;        /* secondary text */
-    --line: 232 224 212;      /* borders, dividers, skeletons */
-    --accent: 194 65 12;     /* the one accent */
-    --on-accent: 255 255 255; /* text on the accent */
-    --danger: 185 28 28;
-    --on-danger: 255 255 255;
-    --focus: 194 65 12;      /* the keyboard focus ring */
-    --food: 22 101 52; /* from the spec's screens */
-    --ride: 29 78 216; /* from the spec's screens */
-    --sell: 133 77 14; /* from the spec's screens */
-    --service: 109 40 217; /* from the spec's screens */
-  }
-  .dark {
-    --ground: 24 20 16;
-    --surface: 36 31 25;
-    --raised: 50 43 35;
-    --fg: 245 239 230;
-    --muted: 184 172 156;
-    --line: 64 56 46;
-    --accent: 251 146 60;
-    --on-accent: 40 16 4;
+    --ground: 18 16 13;     /* the page: deep warm near-black */
+    --surface: 26 23 19;    /* lists, cards, fields — one step above ground */
+    --raised: 38 33 26;     /* hovers, badges */
+    --fg: 240 234 222;      /* text: warm ivory, not pure white */
+    --muted: 161 150 133;   /* secondary text */
+    --line: 54 47 37;       /* borders, dividers, skeletons */
+    --accent: 212 175 55;   /* the one accent: classic gold #d4af37 */
+    --on-accent: 24 18 8;   /* text on the accent: near-black brown */
     --danger: 248 113 113;
     --on-danger: 69 10 10;
-    --focus: 251 146 60;
+    --focus: 212 175 55;    /* the keyboard focus ring */
+    --food: 74 222 128; /* the kinds of cuan, bright on dark */
+    --ride: 147 180 253;
+    --sell: 252 211 77;
+    --service: 196 181 253;
+    /* Derivatives and elevation, used by public/screens.css. */
+    --accent-ink: 226 191 70; /* brighter gold text on a faint gold tint */
+    --shadow-card: inset 0 1px 0 rgba(255,255,255,.04), 0 8px 24px rgba(0,0,0,.35);
+    --shadow-fab: 0 4px 16px rgba(0,0,0,.45), 0 4px 20px rgba(212,175,55,.25);
+    --shadow-sheet: 0 -16px 48px rgba(0,0,0,.6);
+    --ease-out: cubic-bezier(.2,.8,.2,1);
+    --dur-fast: 160ms;
+    --dur-med: 240ms;
+  }
+  .dark {
+    /* Duplicate of :root: the look is fixed dark, whatever the class is. */
+    --ground: 18 16 13;
+    --surface: 26 23 19;
+    --raised: 38 33 26;
+    --fg: 240 234 222;
+    --muted: 161 150 133;
+    --line: 54 47 37;
+    --accent: 212 175 55;
+    --on-accent: 24 18 8;
+    --danger: 248 113 113;
+    --on-danger: 69 10 10;
+    --focus: 212 175 55;
     --food: 74 222 128;
     --ride: 147 180 253;
     --sell: 252 211 77;
     --service: 196 181 253;
+    --accent-ink: 226 191 70;
+    --shadow-card: inset 0 1px 0 rgba(255,255,255,.04), 0 8px 24px rgba(0,0,0,.35);
+    --shadow-fab: 0 4px 16px rgba(0,0,0,.45), 0 4px 20px rgba(212,175,55,.25);
+    --shadow-sheet: 0 -16px 48px rgba(0,0,0,.6);
+    --ease-out: cubic-bezier(.2,.8,.2,1);
+    --dur-fast: 160ms;
+    --dur-med: 240ms;
   }
   /* el.hidden = true hides an element even when a class gives it a display
      (flex, the components below). */
@@ -93,7 +112,8 @@
       focus-visible:ring-offset-ground disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-accent text-on-accent hover:brightness-95;
+    /* Brighter on hover, not darker: the gold must glow up on the dark look. */
+    @apply bg-accent text-on-accent hover:brightness-[1.06];
   }
   .btn-secondary {
     @apply border border-line bg-surface text-fg hover:bg-raised;
@@ -103,7 +123,7 @@
      The placeholder is a faint hint (muted at 60%), so an example such as
      "5.0" never reads as a value somebody already typed in. */
   .field {
-    @apply block min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-body text-fg
+    @apply block min-h-11 w-full rounded-xl border border-line bg-surface px-3 py-2 text-body text-fg
       placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-focus;
   }
 

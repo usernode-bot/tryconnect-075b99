@@ -1,7 +1,9 @@
 /* The screens the spec drew, carried over by the platform before the first
    version was built (screen 1 is public/index.html's main screen; screen 2,
-   if any, its <template data-spec-screen="2">). Colours are the design kit's
-   tokens, rgb(var(--accent)), so they follow the light and the dark look. */
+   if any, its <template data-spec-screen="2">). The app's look is FIXED DARK
+   ("lebih gelap & mewah", see CLAUDE.md's "## Design"): the tokens in
+   styles/tailwind-input.css hold the same deep warm near-black + gold values
+   in :root and .dark, so these colours never switch with the theme. */
 
 /* Each screen is one centred column: the phone width it was drawn at grows
    to a readable column on a wider window, never rows and buttons stretched
@@ -28,7 +30,10 @@
 
 .app * {box-sizing:border-box}
 
-h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
+/* The display heading: bigger, heavier and tracked tight — the "expensive
+   label" feel of the dark luxury look. The points pill's margin-top (below)
+   hangs it off this 30 px cap height. */
+h1 {font-size:30px;line-height:36px;font-weight:800;letter-spacing:-0.02em;margin:0}
 
 .sub {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:2px 0 0}
 
@@ -37,16 +42,19 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 }
 
 /* The app's brand mark, left of the wordmark. Coloured from the tokens, so
-   it follows the light and the dark look with no JS. 28 px beside the 36 px
-   h1 line keeps the points pill's cap-height hang (below) unchanged. */
+   it follows the gold accent with no JS. 28 px beside the 36 px h1 line keeps
+   the points pill's cap-height hang (below) unchanged. */
 .brand {display:flex;align-items:center;gap:10px}
 .brand-mark {width:28px;height:28px;flex:none}
 
-.chips {display:flex;gap:8px;margin:0 -16px 16px;padding:0 16px;overflow-x:auto}
+.chips {display:flex;gap:8px;margin:0 -16px 16px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar {display:none}
 
-.chip {min-height:44px;padding:0 14px;border-radius:22px;border:1px solid rgb(var(--line));background:rgb(var(--surface));font-size:14px;display:inline-flex;align-items:center;white-space:nowrap;color:rgb(var(--fg));font-family:inherit}
+.chip {min-height:44px;padding:0 14px;border-radius:22px;border:1px solid rgb(var(--line));background:rgb(var(--surface));font-size:14px;display:inline-flex;align-items:center;white-space:nowrap;color:rgb(var(--fg));font-family:inherit;transition:border-color var(--dur-fast) var(--ease-out),background var(--dur-fast) var(--ease-out)}
 
-.chip.on {background:rgb(var(--fg));color:rgb(var(--ground));border-color:rgb(var(--fg))}
+/* The active chip: a faint gold tint with bright gold text, not an inked
+   pill — the accent reads as the one colour of choice. */
+.chip.on {background:rgb(var(--accent) / .14);color:rgb(var(--accent-ink));border-color:rgb(var(--accent) / .35);font-weight:600}
 
 .section-label {font-size:14px;line-height:20px;font-weight:500;color:rgb(var(--muted));margin:0 0 8px;padding:0 4px}
 /* The Ojek chip's answer: how many ojek zones are within 100 m. */
@@ -54,15 +62,26 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 
 .noloc-head {margin:16px 0 8px}
 
-.zone {display:flex;gap:12px;background:rgb(var(--surface));border:1px solid rgb(var(--line));border-radius:6px 20px 20px 20px;padding:14px;margin-bottom:12px}
+/* The zone card keeps its tag shape (square top-left corner, rounded
+   elsewhere): that is the app's signature. The dark luxury layer is the
+   hairline border, the one-pixel top highlight and the deep soft shadow,
+   plus a faint gold glow on the border under a pointer. */
+.zone {display:flex;gap:12px;background:rgb(var(--surface));border:1px solid rgb(var(--line) / .9);border-radius:6px 20px 20px 20px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow-card);transition:border-color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
 
-.pin {width:40px;height:40px;flex:none;color:rgb(var(--accent))}
+.zone:active {transform:scale(.985)}
+
+/* The pin sits in a faint gold disc. The disc is a span wrapper in the
+   markup, not CSS padding on the <svg>: svg padding is inconsistent
+   across browsers. */
+.pin-wrap {width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;background:rgb(var(--accent) / .12);border-radius:12px}
+
+.pin {width:22px;height:22px;flex:none;color:rgb(var(--accent))}
 
 .zb {flex:1;min-width:0}
 
 .zt {display:flex;justify-content:space-between;gap:8px}
 
-.zn {font-size:16px;font-weight:600}
+.zn {font-size:16px;font-weight:600;letter-spacing:-0.01em}
 
 .dist {font-size:14px;color:rgb(var(--muted));white-space:nowrap}
 
@@ -87,7 +106,17 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 .badge.jualan {color:rgb(var(--sell))}
 .badge.jasa {color:rgb(var(--service))}
 
-.btn-primary {min-height:52px;padding:0 20px;border-radius:26px;background:rgb(var(--accent));color:rgb(var(--on-accent));display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(35,28,20,.25);border:0;font:inherit;font-weight:600;cursor:pointer}
+/* The gold primary: a dark shadow under a soft gold glow, a gentle press,
+   and a slight brighten on hover (pointer devices only). */
+.btn-primary {min-height:52px;padding:0 20px;border-radius:26px;background:rgb(var(--accent));color:rgb(var(--on-accent));display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow-fab);border:0;font:inherit;font-weight:600;cursor:pointer;transition:box-shadow var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out),filter var(--dur-fast) var(--ease-out)}
+
+.btn-primary:active {transform:scale(.97)}
+
+@media (hover:hover) {
+  .btn-primary:hover {filter:brightness(1.06)}
+  .zone:hover {border-color:rgb(var(--accent) / .25);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 12px 32px rgba(0,0,0,.45)}
+  .upd-row:hover {background:rgb(var(--raised))}
+}
 
 /* The one floating action: sticks to the viewport's bottom edge while the
    list scrolls, right-aligned inside the column on every width. The list's
@@ -100,10 +129,10 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 
 .locline {display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid rgb(var(--line));background:rgb(var(--raised));font-size:14px;color:rgb(var(--muted))}
 
-/* The location buttons are quiet offers, not the primary action: an
-   outline in the action orange, tall enough to tap. The button sits on the
-   surface token, not transparent: the orange on the raised beige of
-   .locline is under 4.5:1, on the surface it passes. */
+/* The location buttons are quiet offers, not the primary action: a gold
+   outline, tall enough to tap. The button sits on the surface token, not
+   transparent: on the raised surface of .locline the gold text loses
+   contrast, on the surface it passes 4.5:1. */
 .locbtn {min-height:44px;padding:0 14px;border-radius:22px;border:1px solid rgb(var(--accent));background:rgb(var(--surface));color:rgb(var(--accent));font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer}
 
 .empty-title {font-size:16px;font-weight:600;margin:8px 0 0;color:rgb(var(--fg))}
@@ -115,6 +144,11 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 .state-empty .btn-primary,.state-error .btn-primary {display:flex;width:fit-content;margin:4px auto 0}
 .err-line {max-width:none}
 
+/* The empty state's pin icon, in a faint gold circle (the circle is a span
+   wrapper in the markup: CSS padding on <svg> is unreliable). */
+.empty-ico {width:56px;height:56px;border-radius:50%;background:rgb(var(--accent) / .12);display:flex;align-items:center;justify-content:center;color:rgb(var(--accent));margin:0 0 4px}
+.empty-ico svg {width:28px;height:28px}
+
 /* Skeleton bars on the loading cards, in the raised grey */
 .sk {display:inline-block;height:14px;border-radius:6px;background:rgb(var(--raised))}
 .sk-pin {width:40px;height:40px;border-radius:12px;flex:none;background:rgb(var(--raised))}
@@ -123,17 +157,32 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 .sk-line {display:block;height:12px;margin:8px 0 0}
 .sk-badge {height:20px;border-radius:10px}
 
-/* Sheets: a bottom sheet over the list. The backdrop tap closes it. */
-.sheet-back {position:fixed;inset:0;background:rgba(35,28,20,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+/* Sheets: a bottom sheet over the list. The backdrop tap closes it; a
+   deeper dim plus a soft blur sets the sheet apart. */
+.sheet-back {position:fixed;inset:0;background:rgba(10,8,6,.6);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+@supports (backdrop-filter: blur(3px)) {
+  .sheet-back {backdrop-filter: blur(3px)}
+}
 .sheet-back[hidden] {display:none}
-.sheet {width:100%;max-width:26rem;max-height:85%;overflow:auto;background:rgb(var(--surface));border-radius:20px 20px 0 0;padding:8px 20px calc(20px + env(safe-area-inset-bottom,0px));color:rgb(var(--fg));font-size:16px;line-height:24px}
+.sheet {width:100%;max-width:26rem;max-height:85%;overflow:auto;background:rgb(var(--surface));border-radius:24px 24px 0 0;box-shadow:var(--shadow-sheet);padding:8px 20px calc(20px + env(safe-area-inset-bottom,0px));color:rgb(var(--fg));font-size:16px;line-height:24px}
+
+/* The sheet's entrance: a short rise and fade. The no-preference wrapper
+   keeps it off users who ask for reduced motion. Toggling [hidden]
+   restarts the animation on every open. */
+@keyframes sheet-in {
+  from {transform:translateY(24px);opacity:0}
+  to {transform:translateY(0);opacity:1}
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sheet-back:not([hidden]) .sheet {animation:sheet-in var(--dur-med) var(--ease-out)}
+}
 .sheet-grab {width:40px;height:4px;border-radius:2px;background:rgb(var(--line));margin:4px auto 12px}
 .sheet-top {display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
 .sheet-title {font-size:16px;font-weight:600}
 .sheet-cancel {border:0;background:none;color:rgb(var(--muted));font:inherit;font-size:14px;min-height:44px;min-width:44px;padding:0;cursor:pointer}
 .sheet-body {padding-bottom:8px}
 .d-cat {margin:0 0 8px}
-.d-name {font-size:20px;font-weight:700;margin:0 0 4px}
+.d-name {font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:0 0 4px}
 .d-note {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:0 0 12px}
 .d-meta {font-size:14px;color:rgb(var(--muted));margin:0 0 12px}
 .d-map {display:inline-block;min-height:44px;line-height:44px;font-size:14px;font-weight:600;color:rgb(var(--accent));text-decoration:none;margin:0 0 8px}
@@ -144,7 +193,7 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 .flabel {display:block;font-size:14px;font-weight:500;margin:12px 0 6px;color:rgb(var(--fg))}
 .fcount {font-weight:400;color:rgb(var(--muted))}
 .cat-chips {display:flex;gap:8px;flex-wrap:wrap}
-.chip.cat.on {background:rgb(var(--fg));color:rgb(var(--ground));border-color:rgb(var(--fg))}
+.chip.cat.on {background:rgb(var(--accent) / .14);color:rgb(var(--accent-ink));border-color:rgb(var(--accent) / .35);font-weight:600}
 .fhint {font-size:13px;line-height:18px;color:rgb(var(--muted));margin:6px 0 12px}
 .ferr {font-size:14px;color:rgb(var(--danger));margin:12px 0 0}
 
@@ -167,11 +216,12 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 
 /* The balance pill, at the top right of the list. It reuses the zone
    card's tag shape: square at the top left corner, rounded elsewhere. It
-   sits on the surface token, not the raised one: the orange number reads
-   4.5:1 on the surface and less on the raised beige. The margin drops its
-   top edge to the h1's cap height, so it hangs like a tag, not a stray box. */
+   sits on the surface token, not the raised one: the gold number reads
+   4.5:1 on the surface and less on the raised dark. The margin drops its
+   top edge to the h1's (30 px) cap height, so it hangs like a tag, not a
+   stray box. */
 .top.has-pts {display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.pts {flex:none;display:flex;flex-direction:column;align-items:flex-end;margin-top:7px;padding:6px 12px;border-radius:6px 14px 14px 14px;background:rgb(var(--surface));border:1px solid rgb(var(--line))}
+.pts {flex:none;display:flex;flex-direction:column;align-items:flex-end;margin-top:9px;padding:6px 12px;border-radius:6px 14px 14px 14px;background:rgb(var(--surface));border:1px solid rgb(var(--line));box-shadow:var(--shadow-card)}
 .pts-label {font-size:13px;line-height:18px;color:rgb(var(--muted))}
 .pts-num {font-size:16px;line-height:22px;font-weight:700;color:rgb(var(--accent))}
 
@@ -184,7 +234,7 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 /* The zone's newest updates, as the kit's grouped list (rows divided by
    lines), so the zone's tag-shaped card stays the only card. */
 .upd-list {list-style:none;margin:0 0 8px;padding:0;border:1px solid rgb(var(--line));border-radius:12px;overflow:hidden;background:rgb(var(--surface))}
-.upd-row {padding:12px 16px}
+.upd-row {padding:14px 16px}
 .upd-row + .upd-row {border-top:1px solid rgb(var(--line))}
 .upd-photo {display:block;width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin:0 0 8px}
 .upd-note {font-size:14px;line-height:20px;margin:0 0 4px}
@@ -194,7 +244,7 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 .upd-empty {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:0 0 16px}
 
 /* The update sheet: a copy of the add sheet (Batal above, the form scrolls,
-   a sticky footer holds the full-width orange button). */
+   a sticky footer holds the full-width gold button). */
 .u-zone {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:0}
 .u-points {font-size:13px;line-height:18px;color:rgb(var(--muted));margin:0 0 10px;text-align:center}
 .u-photo-row {display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -202,5 +252,5 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 .u-photo-del {border:0;background:none;font:inherit;font-size:14px;color:rgb(var(--danger));min-height:44px;padding:0;cursor:pointer}
 
 @media (prefers-reduced-motion: reduce) {
-  .zone,.sheet {transition:none;animation:none}
+  .zone,.sheet,.chip,.btn-primary,.upd-row,.sheet-back {transition:none;animation:none}
 }
