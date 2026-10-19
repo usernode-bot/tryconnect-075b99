@@ -64,7 +64,11 @@
   })();
   </script>
   <title>tryconnect</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 5a35 35 0 00-35 35c0 26 35 55 35 55s35-29 35-55A35 35 0 0050 5z' fill='%23c2410c'/><circle cx='50' cy='40' r='13' fill='white'/></svg>">
+  <!-- The app's brand mark: a location tag (square corner at the top left,
+       like the zone card) holding two joined dots — "connect". Two favicon
+       colour variants live in the theme script below, which swaps them with
+       the viewer's theme. -->
+  <link rel="icon" data-favicon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12V4A2 2 0 0 1 4 2Z' fill='%23c2410c'/><circle cx='8.6' cy='12' r='1.9' fill='white'/><circle cx='15.4' cy='12' r='1.9' fill='white'/><path d='M8.6 12H15.4' stroke='white' stroke-width='2.2' stroke-linecap='round'/></svg>">
   <!-- Tailwind, PRECOMPILED for this app (was cdn.tailwindcss.com's
        in-browser engine plus an inline tailwind.config here). The config
        moved to tailwind.config.js in the repo root; npm run build compiles
@@ -97,10 +101,18 @@
   <script>
     (function () {
       var media = window.matchMedia('(prefers-color-scheme: dark)');
+      // The favicon's two colour variants of the brand mark, for the tab bar
+      // on each look: dark orange for light tabs, bright orange for dark.
+      var favicons = {
+        light: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12V4A2 2 0 0 1 4 2Z' fill='%23c2410c'/><circle cx='8.6' cy='12' r='1.9' fill='white'/><circle cx='15.4' cy='12' r='1.9' fill='white'/><path d='M8.6 12H15.4' stroke='white' stroke-width='2.2' stroke-linecap='round'/></svg>",
+        dark: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12V4A2 2 0 0 1 4 2Z' fill='%23fb923c'/><circle cx='8.6' cy='12' r='1.9' fill='%23281004'/><circle cx='15.4' cy='12' r='1.9' fill='%23281004'/><path d='M8.6 12H15.4' stroke='%23281004' stroke-width='2.2' stroke-linecap='round'/></svg>"
+      };
       function applyTheme() {
         var theme = (window.usernode && window.usernode.theme) || (media.matches ? 'dark' : 'light');
         document.documentElement.classList.toggle('dark', theme === 'dark');
         document.documentElement.style.colorScheme = theme;
+        var fav = document.querySelector('link[rel="icon"][data-favicon]');
+        if (fav && fav.href !== favicons[theme]) fav.href = favicons[theme];
       }
       applyTheme();
       window.addEventListener('usernode:theme-changed', applyTheme);
@@ -122,7 +134,7 @@
   <div data-spec-screen="1">
     <div class="app">
     <div class="top has-pts">
-      <div><h1>tryconnect</h1><p class="sub" id="count-line">Zona peluang cuan</p></div>
+      <div class="brand"><svg class="brand-mark" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12V4A2 2 0 0 1 4 2Z" fill="rgb(var(--accent))"/><circle cx="8.6" cy="12" r="1.9" fill="rgb(var(--on-accent))"/><circle cx="15.4" cy="12" r="1.9" fill="rgb(var(--on-accent))"/><path d="M8.6 12H15.4" stroke="rgb(var(--on-accent))" stroke-width="2.2" stroke-linecap="round"/></svg><div><h1>tryconnect</h1><p class="sub" id="count-line">Zona peluang cuan</p></div></div>
       <div class="pts" data-points id="pts" hidden><span class="pts-label">Poin saya</span><span class="pts-num" id="pts-num"></span></div>
     </div>
     <div class="chips" id="chips">

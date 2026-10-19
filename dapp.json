@@ -17,7 +17,7 @@
     {
       "name": "Zone list loads",
       "path": "/",
-      "expectSelector": "[data-zone-list], .zone, .state-empty"
+      "expectSelector": "[data-zone-list], .zone, .state-empty, .brand"
     },
     {
       "name": "Populated demo",

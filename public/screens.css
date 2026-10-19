@@ -36,6 +36,12 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
   margin-bottom: 16px;
 }
 
+/* The app's brand mark, left of the wordmark. Coloured from the tokens, so
+   it follows the light and the dark look with no JS. 28 px beside the 36 px
+   h1 line keeps the points pill's cap-height hang (below) unchanged. */
+.brand {display:flex;align-items:center;gap:10px}
+.brand-mark {width:28px;height:28px;flex:none}
+
 .chips {display:flex;gap:8px;margin:0 -16px 16px;padding:0 16px;overflow-x:auto}
 
 .chip {min-height:44px;padding:0 14px;border-radius:22px;border:1px solid rgb(var(--line));background:rgb(var(--surface));font-size:14px;display:inline-flex;align-items:center;white-space:nowrap;color:rgb(var(--fg));font-family:inherit}
