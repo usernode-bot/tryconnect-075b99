@@ -31,6 +31,16 @@
       ]
     },
     {
+      "name": "Demo zone updates",
+      "path": "/api/zones?demo=1",
+      "expectText": "antrean penumpang panjang"
+    },
+    {
+      "name": "Points line present",
+      "path": "/?demo=1",
+      "expectSelector": "[data-points]"
+    },
+    {
       "name": "Health",
       "path": "/health",
       "expectText": "ok"

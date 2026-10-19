@@ -121,7 +121,10 @@
        Change them where behaviour needs it; do not redraw them. -->
   <div data-spec-screen="1">
     <div class="app">
-    <div class="top"><h1>tryconnect</h1><p class="sub" id="count-line">Zona peluang cuan</p></div>
+    <div class="top has-pts">
+      <div><h1>tryconnect</h1><p class="sub" id="count-line">Zona peluang cuan</p></div>
+      <div class="pts" data-points id="pts" hidden><span class="pts-label">Poin saya</span><span class="pts-num" id="pts-num"></span></div>
+    </div>
     <div class="chips" id="chips">
       <button class="chip on" data-filter="all" type="button">Semua</button>
       <button class="chip" data-filter="makanan" type="button">Makanan</button>
@@ -220,8 +223,45 @@
           <p class="d-meta" id="d-meta"></p>
           <a class="d-map" id="d-map" target="_blank" rel="noopener">Buka di peta</a>
           <p class="d-msg" id="d-msg" hidden></p>
+          <button class="btn-primary d-update" id="d-update" type="button">Kirim update</button>
+          <p class="d-cooldown" id="d-cooldown" hidden></p>
+          <p class="section-label d-upd-label">Update terbaru</p>
+          <ul class="upd-list" id="d-updates"></ul>
+          <p class="upd-empty" id="d-updates-empty">Belum ada update. Jadi yang pertama, dapat 10 poin.</p>
           <button class="btn-secondary d-act" id="d-delete" type="button" hidden>Hapus zona</button>
           <button class="btn-secondary d-act" id="d-report" type="button" hidden>Laporkan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Update sheet ── -->
+    <div class="sheet-back" id="update-sheet" hidden>
+      <div class="sheet sheet-add" role="dialog" aria-modal="true" aria-label="Kirim update">
+        <div class="sheet-grab"></div>
+        <div class="sheet-top">
+          <button class="sheet-cancel" id="update-cancel" type="button">Batal</button>
+          <span class="sheet-title">Kirim update</span>
+          <span class="sheet-cancel" aria-hidden="true"></span>
+        </div>
+        <form id="update-form">
+          <p class="u-zone" id="u-zone"></p>
+          <label class="flabel" for="u-note">Catatan singkat <span id="u-count" class="fcount">0/140</span></label>
+          <textarea class="field" id="u-note" rows="2" maxlength="140" placeholder="contoh: Antrean penumpang panjang sore ini"></textarea>
+          <div id="u-photo-block" hidden>
+            <p class="flabel">Foto <span class="fcount">boleh kosong</span></p>
+            <div class="u-photo-row">
+              <button class="locbtn" id="u-photo-btn" type="button">Tambah foto</button>
+              <input type="file" id="u-photo-input" accept="image/png,image/jpeg,image/webp" hidden>
+              <button class="u-photo-del" id="u-photo-del" type="button" hidden>Hapus foto</button>
+            </div>
+            <img class="u-preview" id="u-photo-preview" hidden alt="">
+            <p class="fhint">Foto situasi zona sekarang.</p>
+          </div>
+          <p class="ferr" id="update-err" hidden></p>
+        </form>
+        <div class="sheet-foot">
+          <p class="u-points">Dapat 10 poin. Satu update per zona tiap 24 jam.</p>
+          <button class="btn-primary" id="update-save" type="submit" form="update-form">Kirim update</button>
         </div>
       </div>
     </div>
@@ -239,7 +279,13 @@
     var CATEGORIES = { makanan: 'Makanan', ojek: 'Ojek', jualan: 'Jualan', jasa: 'Jasa' };
     var FILTERS = ['all', 'makanan', 'ojek', 'jualan', 'jasa'];
     var OJEK_RADIUS_M = 100;   // the Ojek chip answers "driver within 100 m?"
+    var POINTS_PER_UPDATE = 10;
+    var UPDATE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
     var zones = [];
+    var points = null;          // the viewer's balance for this mode; null for guests
+    var updateZone = null;      // the zone the update sheet is open for
+    var photoBlob = null;       // the chosen photo, downscaled, as a JPEG blob
+    var photoObjUrl = null;
     var origin = null;          // the viewer's position {lat,lng}, or demoOrigin in the demo
     var filter = 'all';
     var token = new URLSearchParams(location.search).get('token') || '';
@@ -278,6 +324,27 @@
       var days = Math.round(hrs / 24);
       if (days < 30) return days + ' hari lalu';
       return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    // "Now" for the cooldown, as milliseconds: the preview clock when the
+    // frame offers one, otherwise the device's own.
+    function currentNodeNow() {
+      var n = (window.usernode && typeof window.usernode.now === 'function')
+        ? window.usernode.now() : Date.now();
+      return new Date(n).getTime();
+    }
+    function cooldownText(msLeft) {
+      var h = Math.ceil(msLeft / 36e5);
+      if (h >= 1) return 'Update berikutnya untuk zona ini bisa dalam ' + h + ' jam.';
+      return 'Update berikutnya untuk zona ini bisa dalam ' + Math.max(1, Math.ceil(msLeft / 60000)) + ' menit.';
+    }
+
+    // ── Poin saya ────────────────────────────────────────────────────────
+    function renderPts() {
+      var pill = $('pts');
+      if (points === null || points === undefined) { pill.hidden = true; return; }
+      pill.hidden = false;
+      $('pts-num').textContent = Number(points).toLocaleString('id-ID');
     }
 
     // ── Sorting and rendering ───────────────────────────────────────────
@@ -421,6 +488,8 @@
       }).then(function (data) {
         zones = data.zones || [];
         if (data.demoOrigin) { origin = data.demoOrigin; usingDemoOrigin = true; }
+        points = (data.points === undefined) ? null : data.points;
+        renderPts();
         loaded = true;
         renderList();
       }).catch(function () {
@@ -568,7 +637,78 @@
       $('d-delete').hidden = !z.mine;
       $('d-report').hidden = !!z.mine;
       $('d-msg').hidden = true;
+      // Kirim update is the detail's one primary action; inside the 24 h
+      // cooldown it is replaced by a quiet line, per zone.
+      var btn = $('d-update'), cd = $('d-cooldown');
+      var lastAt = z.my_last_update_at ? new Date(z.my_last_update_at).getTime() : 0;
+      var msLeft = lastAt + UPDATE_COOLDOWN_MS - currentNodeNow();
+      if (lastAt && msLeft > 0) {
+        btn.hidden = true; cd.hidden = false;
+        cd.textContent = cooldownText(msLeft);
+      } else {
+        btn.hidden = false; cd.hidden = true;
+      }
+      renderDetailUpdates(z);
       $('detail-sheet').hidden = false;
+    }
+
+    function renderDetailUpdates(z) {
+      var list = $('d-updates');
+      list.textContent = '';
+      var ups = z.updates || [];
+      $('d-updates-empty').hidden = ups.length > 0;
+      ups.forEach(function (u) {
+        var li = document.createElement('li');
+        li.className = 'upd-row';
+        if (u.photo_url) {
+          var img = document.createElement('img');
+          img.className = 'upd-photo';
+          img.loading = 'lazy';
+          img.alt = 'Foto update';
+          img.src = u.photo_url;
+          li.appendChild(img);
+        }
+        var p = document.createElement('p');
+        p.className = 'upd-note';
+        p.textContent = u.note || '';
+        li.appendChild(p);
+        var foot = document.createElement('div');
+        foot.className = 'upd-foot';
+        var who = document.createElement('span');
+        who.textContent = (u.mine ? 'kamu' : u.author_username) + ' · ' + fmtWhen(u.created_at);
+        foot.appendChild(who);
+        if (u.reported || u.mine) {
+          var done = document.createElement('span');
+          done.className = 'upd-done';
+          done.textContent = u.reported ? 'Dilaporkan' : '';
+          foot.appendChild(done);
+        } else {
+          var rep = document.createElement('button');
+          rep.type = 'button';
+          rep.className = 'upd-report';
+          rep.textContent = 'Laporkan';
+          rep.addEventListener('click', function (e) {
+            e.stopPropagation();
+            api('/api/updates/' + u.id + '/report', { method: 'POST', body: '{}' }).then(function (r) {
+              if (r.status === 401) {
+                if (window.usernode && window.usernode.askForAccount) window.usernode.askForAccount({ action: 'melaporkan update' });
+                return;
+              }
+              if (r.ok) {
+                u.reported = true;
+                rep.remove();
+                var done2 = document.createElement('span');
+                done2.className = 'upd-done';
+                done2.textContent = 'Dilaporkan';
+                foot.appendChild(done2);
+              }
+            }).catch(function () {});
+          });
+          foot.appendChild(rep);
+        }
+        li.appendChild(foot);
+        list.appendChild(li);
+      });
     }
     $('d-delete').addEventListener('click', function () {
       if (!openZone) return;
@@ -590,6 +730,148 @@
       });
     });
 
+    // ── The update sheet ─────────────────────────────────────────────────
+    // A visitor with no account is asked to make one when they tap Kirim
+    // update, before the sheet opens. The probe is an empty POST: a
+    // signed-in person gets the validation answer (400), a guest gets 401
+    // account_required, and nothing is written either way.
+    $('d-update').addEventListener('click', function () {
+      if (!openZone) return;
+      api('/api/zones/' + openZone.id + '/updates', { method: 'POST', body: '{}' }).then(function (r) {
+        if (r.status === 401) {
+          if (window.usernode && window.usernode.askForAccount) window.usernode.askForAccount({ action: 'kirim update' });
+          return;
+        }
+        openUpdateSheet(openZone);
+      }).catch(function () {});
+    });
+
+    var hasUpload = !!(window.usernode && typeof window.usernode.uploadFile === 'function');
+    $('u-photo-block').hidden = !hasUpload;
+
+    function openUpdateSheet(z) {
+      updateZone = z;
+      $('u-zone').textContent = z.name;
+      $('u-note').value = '';
+      $('u-count').textContent = '0/140';
+      clearPhoto();
+      $('update-err').hidden = true;
+      $('update-sheet').hidden = false;
+      $('u-note').focus();
+    }
+    function closeUpdateSheet() {
+      $('update-sheet').hidden = true;
+      clearPhoto();
+      updateZone = null;
+    }
+
+    function clearPhoto() {
+      if (photoObjUrl) URL.revokeObjectURL(photoObjUrl);
+      photoBlob = null;
+      photoObjUrl = null;
+      $('u-photo-preview').hidden = true;
+      $('u-photo-preview').removeAttribute('src');
+      $('u-photo-btn').textContent = 'Tambah foto';
+      $('u-photo-del').hidden = true;
+    }
+
+    // Camera photos arrive far larger than anyone needs: downscale to
+    // 1600 px on the long edge and re-encode as JPEG before uploading.
+    function downscalePhoto(file, done) {
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var MAX = 1600;
+        var scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+        var cw = Math.max(1, Math.round(img.naturalWidth * scale));
+        var ch = Math.max(1, Math.round(img.naturalHeight * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = cw;
+        canvas.height = ch;
+        canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        canvas.toBlob(function (blob) { done(blob); }, 'image/jpeg', 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); done(null); };
+      img.src = url;
+    }
+
+    $('u-photo-btn').addEventListener('click', function () { $('u-photo-input').click(); });
+    $('u-photo-input').addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      this.value = '';
+      if (!f || !/^image\/(png|jpeg|webp)$/.test(f.type)) return;
+      downscalePhoto(f, function (blob) {
+        if (!blob) return;
+        if (photoObjUrl) URL.revokeObjectURL(photoObjUrl);
+        photoBlob = blob;
+        photoObjUrl = URL.createObjectURL(blob);
+        var prev = $('u-photo-preview');
+        prev.src = photoObjUrl;
+        prev.hidden = false;
+        prev.alt = 'Pratinjau foto';
+        $('u-photo-btn').textContent = 'Ganti foto';
+        $('u-photo-del').hidden = false;
+      });
+    });
+    $('u-photo-del').addEventListener('click', clearPhoto);
+    $('u-note').addEventListener('input', function () {
+      $('u-count').textContent = $('u-note').value.length + '/140';
+    });
+
+    function uploadPhoto() {
+      var file = photoBlob;
+      try { file = new File([photoBlob], 'update.jpg', { type: 'image/jpeg' }); } catch (_) {}
+      return window.usernode.uploadFile(file, { visibility: 'public' }).catch(function () {
+        throw new Error('Foto gagal diunggah. Kirim tanpa foto atau coba lagi.');
+      });
+    }
+
+    $('update-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var z = updateZone;
+      if (!z) return;
+      var note = $('u-note').value.trim();
+      var err = $('update-err');
+      err.hidden = true;
+      if (!note && !photoBlob) { err.textContent = 'Isi catatan singkat atau tambah foto.'; err.hidden = false; return; }
+      var save = $('update-save');
+      save.disabled = true;
+      save.textContent = 'Mengirim…';
+      var send = function (photo) {
+        var body = { note: note };
+        if (photo) { body.photo_url = photo.url; body.photo_id = photo.id; }
+        return api('/api/zones/' + z.id + '/updates', { method: 'POST', body: JSON.stringify(body) })
+          .then(function (r) {
+            return r.json().then(function (data) {
+              if (!r.ok) throw new Error(data.error || 'Gagal mengirim update.');
+              return data;
+            });
+          });
+      };
+      var p = photoBlob ? uploadPhoto().then(send) : send(null);
+      p.then(function (data) {
+        var u = data.update;
+        z.updates = z.updates || [];
+        z.updates.unshift(u);
+        if (z.updates.length > 5) z.updates.length = 5;
+        z.my_last_update_at = u.created_at;
+        points = data.points;
+        closeUpdateSheet();
+        renderPts();
+        openDetail(z);
+        $('d-msg').hidden = false;
+        $('d-msg').textContent = 'Update terkirim. Kamu dapat ' + POINTS_PER_UPDATE + ' poin.';
+      }).catch(function (ex) {
+        // The sheet stays open, the note and the photo choice stay.
+        err.textContent = ex.message || 'Gagal mengirim update. Coba lagi.';
+        err.hidden = false;
+      }).then(function () {
+        save.disabled = false;
+        save.textContent = 'Kirim update';
+      });
+    });
+
     // ── Wiring ──────────────────────────────────────────────────────────
     $('chips').addEventListener('click', function (e) {
       var chip = e.target.closest('.chip');
@@ -608,6 +890,7 @@
     document.querySelector('.empty-add').addEventListener('click', openAdd);
     $('retry-btn').addEventListener('click', load);
     $('add-cancel').addEventListener('click', closeAdd);
+    $('update-cancel').addEventListener('click', closeUpdateSheet);
     $('detail-close').addEventListener('click', function () { $('detail-sheet').hidden = true; openZone = null; });
     // A tap on the dimmed backdrop closes the sheet it belongs to.
     document.querySelectorAll('.sheet-back').forEach(function (back) {
@@ -615,6 +898,7 @@
         if (e.target !== back) return;
         back.hidden = true;
         if (back.id === 'detail-sheet') openZone = null;
+        if (back.id === 'update-sheet') { updateZone = null; clearPhoto(); }
         renderList();
       });
     });
