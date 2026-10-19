@@ -65,10 +65,10 @@
   </script>
   <title>tryconnect</title>
   <!-- The app's brand mark: a location tag (square corner at the top left,
-       like the zone card) holding two joined dots — "connect". Two favicon
-       colour variants live in the theme script below, which swaps them with
-       the viewer's theme. -->
-  <link rel="icon" data-favicon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12V4A2 2 0 0 1 4 2Z' fill='%23c2410c'/><circle cx='8.6' cy='12' r='1.9' fill='white'/><circle cx='15.4' cy='12' r='1.9' fill='white'/><path d='M8.6 12H15.4' stroke='white' stroke-width='2.2' stroke-linecap='round'/></svg>">
+       like the zone card) holding two joined dots — "connect". One gold
+       favicon: the app's look is fixed dark (the theme script below), so
+       there is no light variant to swap to. -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12V4A2 2 0 0 1 4 2Z' fill='%23d4af37'/><circle cx='8.6' cy='12' r='1.9' fill='%2318160d'/><circle cx='15.4' cy='12' r='1.9' fill='%2318160d'/><path d='M8.6 12H15.4' stroke='%2318160d' stroke-width='2.2' stroke-linecap='round'/></svg>">
   <!-- Tailwind, PRECOMPILED for this app (was cdn.tailwindcss.com's
        in-browser engine plus an inline tailwind.config here). The config
        moved to tailwind.config.js in the repo root; npm run build compiles
@@ -93,30 +93,18 @@
        Another is the page's colour: the bridge reports this document's opaque
        ground to the shell (#1581), which is what makes the platform bar above
        the app take the app's tone instead of the viewer's theme (#1945).
-       The bridge is also where the app learns the viewer's light/dark theme:
-       the script below reads it. -->
+       The bridge can also report the viewer's light/dark theme; this app's
+       look is fixed dark, so it no longer needs it. -->
   <script src="/usernode-bridge/v1/bridge.js"></script>
-  <!-- Follow the viewer's Homeroom theme (the bridge reports it), with the
-       OS preference as the fallback outside Homeroom. -->
+  <!-- The app's look is FIXED DARK by design ("lebih gelap & mewah"): it
+       does not follow the viewer's Homeroom theme. The .dark class stays on
+       <html> for Tailwind's dark: variants, and colorScheme tells form
+       controls to render dark. The tokens in styles/tailwind-input.css hold
+       the same values in :root and .dark, so nothing switches either way. -->
   <script>
     (function () {
-      var media = window.matchMedia('(prefers-color-scheme: dark)');
-      // The favicon's two colour variants of the brand mark, for the tab bar
-      // on each look: dark orange for light tabs, bright orange for dark.
-      var favicons = {
-        light: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12V4A2 2 0 0 1 4 2Z' fill='%23c2410c'/><circle cx='8.6' cy='12' r='1.9' fill='white'/><circle cx='15.4' cy='12' r='1.9' fill='white'/><path d='M8.6 12H15.4' stroke='white' stroke-width='2.2' stroke-linecap='round'/></svg>",
-        dark: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12V4A2 2 0 0 1 4 2Z' fill='%23fb923c'/><circle cx='8.6' cy='12' r='1.9' fill='%23281004'/><circle cx='15.4' cy='12' r='1.9' fill='%23281004'/><path d='M8.6 12H15.4' stroke='%23281004' stroke-width='2.2' stroke-linecap='round'/></svg>"
-      };
-      function applyTheme() {
-        var theme = (window.usernode && window.usernode.theme) || (media.matches ? 'dark' : 'light');
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        document.documentElement.style.colorScheme = theme;
-        var fav = document.querySelector('link[rel="icon"][data-favicon]');
-        if (fav && fav.href !== favicons[theme]) fav.href = favicons[theme];
-      }
-      applyTheme();
-      window.addEventListener('usernode:theme-changed', applyTheme);
-      media.addEventListener('change', applyTheme);
+      document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
     })();
   </script>
 </head>
@@ -164,7 +152,7 @@
 
     <!-- Empty: only after a load that worked and found nothing. -->
     <div id="state-empty" class="state-empty" hidden>
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:rgb(var(--accent))"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <span class="empty-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
       <p class="empty-title">Belum ada zona</p>
       <p class="empty-sub">Tambahkan tempat ramai yang kamu tahu, biar yang lain ikut cari cuan.</p>
       <button class="btn-primary empty-add" type="button">Tambah zona</button>
@@ -185,7 +173,7 @@
     <!-- The rendered list. One drawn row stays as the template to copy. -->
     <div id="zone-list" data-zone-list></div>
     <template id="zone-row">
-      <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn"></span><span class="dist"></span></div><p class="note"></p><div class="meta"><span class="badge"></span><span class="by"></span></div></div></div>
+      <div class="zone"><span class="pin-wrap"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div class="zb"><div class="zt"><span class="zn"></span><span class="dist"></span></div><p class="note"></p><div class="meta"><span class="badge"></span><span class="by"></span></div></div></div>
     </template>
 
     <button class="btn-primary" id="add-fab" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Tambah zona</button>
