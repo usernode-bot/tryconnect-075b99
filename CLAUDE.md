@@ -125,8 +125,10 @@ it, and updates it when a request changes the look on purpose.
   Family is the system rounded face (ui-rounded), then system-ui; set in
   `tailwind.config.js` and on `.app` in `public/screens.css`.
 - The app's text is in Indonesian (lang="id"). One word per thing: zona,
-  jenis cuan, catatan singkat, Tambah zona, Simpan zona, Laporkan, Hapus
-  zona. Distance reads "350 m" or "1,2 km".
+  jenis cuan, catatan singkat, Tambah zona, Simpan zona, update, Update
+  terbaru, Kirim update, Foto (boleh kosong), Tambah foto, Ganti foto,
+  Hapus foto, poin, Poin saya, Laporkan, Dilaporkan, Hapus zona. Distance
+  reads "350 m" or "1,2 km".
 
 ## App-specific conventions
 
@@ -140,7 +142,15 @@ it, and updates it when a request changes the look on purpose.
   ojek zones within 100 m of `origin` (rounded metres, like the card's
   distance), with a count line above the list, and nothing at all when
   the viewer's location is unknown. Other chips ignore the radius.
-- `zone_reports` is marked `staging:private`; everything else is public.
+- `zone_reports`, `point_ledger` and `update_reports` are marked
+  `staging:private`; everything else is public.
+- Every update sent earns a fixed 10 points (`POINTS_PER_UPDATE` in
+  `server.js`), once per zone per member every 24 hours
+  (`UPDATE_COOLDOWN_MS`). The balance is `SUM(amount)` over `point_ledger`
+  rows where `is_demo` matches the request's demo flag, so demo points
+  never mix with real ones.
+- The demo seeds four text-only updates by fake authors (fixed
+  `demo_key`s); it never seeds points or updates for the viewer.
 - The `?demo=1` demo is staging-only: boot seeds eight fake-author zones
   with fixed `demo_key`s, and the viewer's own two zones are written once
   per account on their first `?demo=1` read. Demo rows never appear

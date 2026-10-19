@@ -95,8 +95,10 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 .locline {display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid rgb(var(--line));background:rgb(var(--raised));font-size:14px;color:rgb(var(--muted))}
 
 /* The location buttons are quiet offers, not the primary action: an
-   outline in the action orange, tall enough to tap. */
-.locbtn {min-height:44px;padding:0 14px;border-radius:22px;border:1px solid rgb(var(--accent));background:transparent;color:rgb(var(--accent));font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer}
+   outline in the action orange, tall enough to tap. The button sits on the
+   surface token, not transparent: the orange on the raised beige of
+   .locline is under 4.5:1, on the surface it passes. */
+.locbtn {min-height:44px;padding:0 14px;border-radius:22px;border:1px solid rgb(var(--accent));background:rgb(var(--surface));color:rgb(var(--accent));font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer}
 
 .empty-title {font-size:16px;font-weight:600;margin:8px 0 0;color:rgb(var(--fg))}
 .empty-sub {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:0 0 12px;max-width:280px}
@@ -148,11 +150,50 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 .sheet-foot {flex:none;border-top:1px solid rgb(var(--line));background:rgb(var(--surface));padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
 .sheet-foot .btn-primary {width:100%}
 
-/* Wider than a phone the chip row wraps instead of clipping at the column
-   edge; on a phone it still scrolls sideways. */
+/* Wider than a phone the chip row keeps the phone's one-line sideways
+   scroll (wrapping stranded the last chip on its own row); only the
+   edge-to-edge phone gutters relax. */
 @media (min-width:480px) {
-  .chips {flex-wrap:wrap;overflow-x:visible;margin:0 0 16px;padding:0 4px}
+  .chips {margin:0 0 16px;padding:0 4px}
 }
+
+/* ── Poin saya and zone updates ─────────────────────────────────────────── */
+
+/* The balance pill, at the top right of the list. It reuses the zone
+   card's tag shape: square at the top left corner, rounded elsewhere. It
+   sits on the surface token, not the raised one: the orange number reads
+   4.5:1 on the surface and less on the raised beige. The margin drops its
+   top edge to the h1's cap height, so it hangs like a tag, not a stray box. */
+.top.has-pts {display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.pts {flex:none;display:flex;flex-direction:column;align-items:flex-end;margin-top:7px;padding:6px 12px;border-radius:6px 14px 14px 14px;background:rgb(var(--surface));border:1px solid rgb(var(--line))}
+.pts-label {font-size:13px;line-height:18px;color:rgb(var(--muted))}
+.pts-num {font-size:16px;line-height:22px;font-weight:700;color:rgb(var(--accent))}
+
+/* The zone detail's one primary action, and the line that replaces it
+   inside the 24 h cooldown. */
+.d-update {width:100%;margin:0 0 16px}
+.d-cooldown {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:0 0 16px}
+.d-upd-label {margin:0 0 8px}
+
+/* The zone's newest updates, as the kit's grouped list (rows divided by
+   lines), so the zone's tag-shaped card stays the only card. */
+.upd-list {list-style:none;margin:0 0 8px;padding:0;border:1px solid rgb(var(--line));border-radius:12px;overflow:hidden;background:rgb(var(--surface))}
+.upd-row {padding:12px 16px}
+.upd-row + .upd-row {border-top:1px solid rgb(var(--line))}
+.upd-photo {display:block;width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin:0 0 8px}
+.upd-note {font-size:14px;line-height:20px;margin:0 0 4px}
+.upd-foot {display:flex;justify-content:space-between;align-items:center;font-size:13px;line-height:18px;color:rgb(var(--muted))}
+.upd-report {border:0;background:none;font:inherit;font-size:13px;color:rgb(var(--muted));min-height:44px;padding:0 0 0 12px;margin:-12px 0;cursor:pointer}
+.upd-done {font-size:13px;line-height:18px;color:rgb(var(--muted))}
+.upd-empty {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:0 0 16px}
+
+/* The update sheet: a copy of the add sheet (Batal above, the form scrolls,
+   a sticky footer holds the full-width orange button). */
+.u-zone {font-size:14px;line-height:20px;color:rgb(var(--muted));margin:0}
+.u-points {font-size:13px;line-height:18px;color:rgb(var(--muted));margin:0 0 10px;text-align:center}
+.u-photo-row {display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.u-preview {display:block;width:100%;max-height:200px;object-fit:cover;border-radius:12px}
+.u-photo-del {border:0;background:none;font:inherit;font-size:14px;color:rgb(var(--danger));min-height:44px;padding:0;cursor:pointer}
 
 @media (prefers-reduced-motion: reduce) {
   .zone,.sheet {transition:none;animation:none}

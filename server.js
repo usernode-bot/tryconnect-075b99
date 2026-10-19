@@ -40,6 +40,11 @@ const PUBLIC_API_PATHS = new Set(['/health']);
 // The four ready-made kinds of cuan, as the spec fixes them.
 const CATEGORIES = ['makanan', 'ojek', 'jualan', 'jasa'];
 
+// Points: every fresh update on a zone earns a fixed amount, once per zone
+// per member every 24 hours, so nobody can farm points.
+const POINTS_PER_UPDATE = 10;
+const UPDATE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
 // Data and demo rows are staging-only; the feature itself is not.
 const IS_STAGING = process.env.USERNODE_ENV === 'staging';
 
@@ -198,10 +203,55 @@ async function migrate() {
       account_id text PRIMARY KEY,
       seeded_at timestamptz NOT NULL DEFAULT now()
     )`);
+  // Updates members post on a zone: public like the zone itself, since the
+  // zone detail shows them to everyone who can read zones.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS zone_updates (
+      id serial PRIMARY KEY,
+      zone_id integer NOT NULL REFERENCES zones(id) ON DELETE CASCADE,
+      author_id text NOT NULL,
+      author_username text NOT NULL,
+      note varchar(140) NOT NULL DEFAULT '',
+      photo_url text,
+      photo_id text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      demo_key text UNIQUE
+    )`);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS zone_updates_zone_author_idx
+    ON zone_updates (zone_id, author_id, created_at DESC)`);
+  // The points balance: one row per earned amount. Private — it carries
+  // account ids and money-adjacent data, and it is the base for the rupiah
+  // exchange later. Private-to-public FK (update_id) is allowed.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS point_ledger (
+      id serial PRIMARY KEY,
+      account_id text NOT NULL,
+      amount integer NOT NULL,
+      reason text NOT NULL,
+      update_id integer REFERENCES zone_updates(id) ON DELETE SET NULL,
+      is_demo boolean NOT NULL DEFAULT false,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS point_ledger_account_idx
+    ON point_ledger (account_id, is_demo)`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS update_reports (
+      id serial PRIMARY KEY,
+      update_id integer NOT NULL REFERENCES zone_updates(id) ON DELETE CASCADE,
+      reporter_id text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (update_id, reporter_id)
+    )`);
   await pool.query(
     `COMMENT ON TABLE zone_reports IS 'staging:private'`);
   await pool.query(
     `COMMENT ON TABLE demo_viewer_seeds IS 'staging:private'`);
+  await pool.query(
+    `COMMENT ON TABLE point_ledger IS 'staging:private'`);
+  await pool.query(
+    `COMMENT ON TABLE update_reports IS 'staging:private'`);
 }
 
 // ── Staging demo ──────────────────────────────────────────────────────────
@@ -264,6 +314,37 @@ async function seedViewerDemoZones(user) {
       -6.1470, 106.7025, 'viewer:' + user.id + ':2']);
 }
 
+// A few text-only updates by the demo zones' fake authors, written once on
+// boot with fixed demo_keys. No ledger rows for fake authors: their points
+// are never shown. Nothing is written for the viewer, so the cooldown and
+// balance logic stay real on the demo route.
+const DEMO_UPDATES = [
+  { key: 'demo-update:1', zone: 'demo:2', author: 'Bagas Contoh', note: 'Sore ini antrean penumpang panjang di pintu selatan.', hoursAgo: 1 },
+  { key: 'demo-update:2', zone: 'demo:2', author: 'Dewi Contoh', note: 'Hujan dari jam 4, pesanan antar naik.', hoursAgo: 5 },
+  { key: 'demo-update:3', zone: 'demo:1', author: 'Rina Contoh', note: 'Malam ini buka sampai jam 12, ramai anak kos.', hoursAgo: 3 },
+  { key: 'demo-update:4', zone: 'demo:3', author: 'Sari Contoh', note: 'Minggu ini lapak dipindah ke sisi timur lapangan.', hoursAgo: 26 },
+];
+
+async function seedDemoUpdates() {
+  const { rows } = await pool.query("SELECT id, demo_key FROM zones WHERE demo_key LIKE 'demo:%'");
+  const zoneIdByKey = {};
+  rows.forEach(z => { zoneIdByKey[z.demo_key] = z.id; });
+  const demo = DEMO_UPDATES.filter(u => zoneIdByKey[u.zone]);
+  if (!demo.length) return;
+  await pool.query(`
+    INSERT INTO zone_updates (zone_id, author_id, author_username, note, created_at, demo_key)
+    SELECT * FROM unnest($1::int[], $2::text[], $3::text[], $4::varchar[], $5::timestamptz[], $6::text[])
+    ON CONFLICT (demo_key) DO NOTHING`,
+    [
+      demo.map(u => zoneIdByKey[u.zone]),
+      demo.map(u => 'demo-author:' + (DEMO_AUTHORS.indexOf(u.author) + 1)),
+      demo.map(u => u.author),
+      demo.map(u => u.note),
+      demo.map(u => new Date(Date.now() - u.hoursAgo * 36e5)),
+      demo.map(u => u.key),
+    ]);
+}
+
 // ── The API ───────────────────────────────────────────────────────────────
 // Sorting happens in the browser; these routes return rows and (in the
 // demo) a fixed stand-in position for the viewer.
@@ -280,7 +361,54 @@ app.get('/api/zones', async (req, res) => {
       WHERE is_demo = $2::boolean
       ORDER BY created_at DESC`,
       [viewerId, demo]);
-    res.json({ zones: rows, demoOrigin: demo ? DEMO_ORIGIN : null });
+    // Each returned zone carries its five newest updates, newest first,
+    // whether the viewer has reported each one, and the viewer's own last
+    // update time on that zone (the 24 h cooldown). Guests read updates
+    // too but have no report rows and no updates of their own.
+    if (rows.length) {
+      const ids = rows.map(r => r.id);
+      const { rows: updRows } = await pool.query(`
+        SELECT zone_id, id, author_id, author_username, note, photo_url, created_at,
+               (author_id = $2::text) AS mine,
+               EXISTS (SELECT 1 FROM update_reports ur
+                       WHERE ur.update_id = zone_updates.id AND ur.reporter_id = $2::text) AS reported,
+               row_number() OVER (PARTITION BY zone_id ORDER BY created_at DESC) AS rn
+        FROM zone_updates
+        WHERE zone_id = ANY($1::int[])`,
+        [ids, viewerId]);
+      const byZone = {};
+      updRows.forEach(u => {
+        if (Number(u.rn) > 5) return;
+        (byZone[u.zone_id] = byZone[u.zone_id] || []).push({
+          id: u.id, author_username: u.author_username, note: u.note,
+          photo_url: u.photo_url, created_at: u.created_at,
+          mine: u.mine || false, reported: u.reported || false,
+        });
+      });
+      const lastByZone = {};
+      if (req.user) {
+        const { rows: lastRows } = await pool.query(`
+          SELECT zone_id, MAX(created_at) AS last_at
+          FROM zone_updates
+          WHERE author_id = $1::text AND zone_id = ANY($2::int[])
+          GROUP BY zone_id`, [viewerId, ids]);
+        lastRows.forEach(r => { lastByZone[r.zone_id] = r.last_at; });
+      }
+      rows.forEach(z => {
+        z.updates = byZone[z.id] || [];
+        z.my_last_update_at = lastByZone[z.id] || null;
+      });
+    }
+    // The viewer's point balance for this mode; guests have none. Demo
+    // points never mix with real ones.
+    let points = null;
+    if (req.user) {
+      const { rows: [bal] } = await pool.query(
+        'SELECT COALESCE(SUM(amount), 0)::int AS points FROM point_ledger WHERE account_id = $1::text AND is_demo = $2::boolean',
+        [viewerId, demo]);
+      points = bal.points;
+    }
+    res.json({ zones: rows, demoOrigin: demo ? DEMO_ORIGIN : null, points });
   } catch (err) {
     console.error('GET /api/zones failed', err);
     res.status(500).json({ error: 'gagal_memuat' });
@@ -298,6 +426,24 @@ function cleanCoords(lat, lng) {
   if (!Number.isFinite(la) || !Number.isFinite(ln)) return { lat: null, lng: null };
   if (la < -11.5 || la > 6.5 || ln < 94.5 || ln > 141.5) return null;
   return { lat: Math.round(la * 10000) / 10000, lng: Math.round(ln * 10000) / 10000 };
+}
+
+// A photo URL a client may hand us with an update: only a file the
+// platform's own storage returned (its /app-files/ path and 32-hex id),
+// never an outside image host or a data URI. Nothing is accepted when the
+// platform origin is unknown.
+const HEX32 = /^[0-9a-f]{32}$/;
+function cleanPhotoUrl(url) {
+  if (typeof url !== 'string' || !url.trim()) return null;
+  if (!PLATFORM_ORIGIN) return null;
+  const trimmed = url.trim();
+  const prefix = PLATFORM_ORIGIN + '/app-files/';
+  if (!trimmed.startsWith(prefix)) return null;
+  return HEX32.test(trimmed.slice(prefix.length)) ? trimmed : null;
+}
+
+function cleanPhotoId(id) {
+  return typeof id === 'string' && HEX32.test(id) ? id : null;
 }
 
 app.post('/api/zones', async (req, res) => {
@@ -366,6 +512,110 @@ app.post('/api/zones/:id/report', async (req, res) => {
   }
 });
 
+// Send an update on a zone: a short note, an optional platform-stored
+// photo, or both. Earns POINTS_PER_UPDATE, once per zone per member every
+// UPDATE_COOLDOWN_MS. Body validation runs before the cooldown check, so
+// the client's empty guest probe never consumes a cooldown.
+app.post('/api/zones/:id/updates', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'account_required' });
+    const zoneId = Number(req.params.id);
+    if (!Number.isInteger(zoneId)) return res.status(400).json({ error: 'Zona tidak ditemukan.' });
+    const { rows: [zone] } = await pool.query(
+      'SELECT id, is_demo FROM zones WHERE id = $1::int', [zoneId]);
+    if (!zone) return res.status(404).json({ error: 'Zona tidak ditemukan.' });
+    const note = typeof req.body.note === 'string' ? req.body.note.trim() : '';
+    if (note.length > 140) return res.status(400).json({ error: 'Catatan singkat paling banyak 140 huruf.' });
+    const photoUrl = cleanPhotoUrl(req.body.photo_url);
+    if (req.body.photo_url && photoUrl === null) {
+      return res.status(400).json({ error: 'Foto tidak valid.' });
+    }
+    const photoId = cleanPhotoId(req.body.photo_id);
+    if (req.body.photo_id && photoId === null) {
+      return res.status(400).json({ error: 'Foto tidak valid.' });
+    }
+    if (!note && !photoUrl) return res.status(400).json({ error: 'Isi catatan singkat atau tambah foto.' });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Lock the zone row so two quick submits wait in line and only the
+      // first one inside the cooldown earns points.
+      const { rows: [locked] } = await client.query(
+        'SELECT id FROM zones WHERE id = $1::int FOR UPDATE', [zoneId]);
+      if (!locked) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Zona tidak ditemukan.' });
+      }
+      const { rows: [last] } = await client.query(`
+        SELECT created_at FROM zone_updates
+        WHERE zone_id = $1::int AND author_id = $2::text
+        ORDER BY created_at DESC LIMIT 1`,
+        [zoneId, req.user.id]);
+      if (last && new Date(last.created_at).getTime() > req.now.getTime() - UPDATE_COOLDOWN_MS) {
+        await client.query('ROLLBACK');
+        return res.status(429).json({
+          error: 'Kamu sudah kirim update untuk zona ini. Coba lagi besok.',
+          next_at: new Date(new Date(last.created_at).getTime() + UPDATE_COOLDOWN_MS).toISOString(),
+        });
+      }
+      const { rows: [upd] } = await client.query(`
+        INSERT INTO zone_updates (zone_id, author_id, author_username, note, photo_url, photo_id, created_at)
+        VALUES ($1::int, $2, $3, $4, $5, $6, $7)
+        RETURNING id, note, photo_url, created_at`,
+        [zoneId, req.user.id, req.user.username, note, photoUrl, photoId, req.now]);
+      // The ledger's is_demo copies the zone's, so demo points never mix
+      // with real ones. Points stay earned even if the zone or update is
+      // later deleted (SET NULL keeps the row).
+      await client.query(`
+        INSERT INTO point_ledger (account_id, amount, reason, update_id, is_demo, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6)`,
+        [req.user.id, POINTS_PER_UPDATE, 'zone_update', upd.id, zone.is_demo, req.now]);
+      const { rows: [bal] } = await client.query(
+        'SELECT COALESCE(SUM(amount), 0)::int AS points FROM point_ledger WHERE account_id = $1::text AND is_demo = $2::boolean',
+        [req.user.id, zone.is_demo]);
+      await client.query('COMMIT');
+      res.status(201).json({
+        update: {
+          id: upd.id, author_username: req.user.username, note: upd.note,
+          photo_url: upd.photo_url, created_at: upd.created_at, mine: true, reported: false,
+        },
+        points: bal.points,
+      });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('POST /api/zones/:id/updates failed', err);
+    res.status(500).json({ error: 'gagal_menyimpan' });
+  }
+});
+
+// Report an update. Like reporting a zone: recorded, never hidden, and no
+// points are taken away.
+app.post('/api/updates/:id/report', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'account_required' });
+    const updateId = Number(req.params.id);
+    if (!Number.isInteger(updateId)) return res.status(400).json({ error: 'Update tidak ditemukan.' });
+    const { rows: [upd] } = await pool.query(
+      'SELECT author_id FROM zone_updates WHERE id = $1::int', [updateId]);
+    if (!upd) return res.status(404).json({ error: 'Update tidak ditemukan.' });
+    if (String(upd.author_id) === String(req.user.id)) {
+      return res.status(400).json({ error: 'Update ini kiriman kamu sendiri.' });
+    }
+    await pool.query(
+      'INSERT INTO update_reports (update_id, reporter_id, created_at) VALUES ($1::int, $2, $3) ON CONFLICT DO NOTHING',
+      [updateId, req.user.id, req.now]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/updates/:id/report failed', err);
+    res.status(500).json({ error: 'gagal_melaporkan' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // HTML shell: serve the app if authenticated. Unauthenticated top-level
@@ -406,7 +656,7 @@ async function start() {
   await migrate();
   // The demo exists only on staging, and its fake authors are seeded once
   // per boot; a viewer's own rows are written on their first ?demo=1 read.
-  if (IS_STAGING) await seedDemoZones();
+  if (IS_STAGING) { await seedDemoZones(); await seedDemoUpdates(); }
   const server = app.listen(port, () => console.log(`Listening on :${port}`));
   // Let Envoy retire idle upstream connections at 60s, with a 15s margin.
   server.keepAliveTimeout = 75_000;
