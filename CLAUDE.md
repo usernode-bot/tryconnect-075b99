@@ -127,7 +127,8 @@ it, and updates it when a request changes the look on purpose.
 - The app's text is in Indonesian (lang="id"). One word per thing: zona,
   jenis cuan, catatan singkat, Tambah zona, Simpan zona, update, Update
   terbaru, Kirim update, Foto (boleh kosong), Tambah foto, Ganti foto,
-  Hapus foto, poin, Poin saya, Laporkan, Dilaporkan, Hapus zona. Distance
+  Hapus foto, poin, Poin saya, Laporkan, Dilaporkan, Hapus zona, Daftar,
+  Peta, Kamu. Distance
   reads "350 m" or "1,2 km".
 
 ## App-specific conventions
@@ -138,6 +139,10 @@ it, and updates it when a request changes the look on purpose.
   fall inside Indonesia's rough bounds (`cleanCoords` in server.js).
 - Sorting happens in the browser from `GET /api/zones` rows; the server
   never sorts by distance.
+- The Peta view draws `sorted()`'s output around `origin` as a schematic
+  SVG (flat projection, distance rings, no map service). Under the Ojek
+  chip its scale is fixed at 100 m (rings at 50 m and 100 m); otherwise
+  the rings step up from 50 m so the farthest zone fits in three.
 - The Ojek chip is the one-tap driver-availability menu: it shows only
   ojek zones within 100 m of `origin` (rounded metres, like the card's
   distance), with a count line above the list, and nothing at all when

@@ -201,6 +201,44 @@ h1 {font-size:28px;line-height:36px;font-weight:700;margin:0}
 .u-preview {display:block;width:100%;max-height:200px;object-fit:cover;border-radius:12px}
 .u-photo-del {border:0;background:none;font:inherit;font-size:14px;color:rgb(var(--danger));min-height:44px;padding:0;cursor:pointer}
 
+/* ── The Daftar/Peta switch and the Peta view ──────────────────────────── */
+
+/* The switch sits on the section-label's line, in the quiet raised grey:
+   it must not compete with the filter chips (dark selected chip) or the
+   orange button. */
+.view-row {display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px}
+.view-row .section-label {margin:0}
+.view-toggle {display:inline-flex;padding:2px;border-radius:24px;background:rgb(var(--raised));border:1px solid rgb(var(--line))}
+.vt {min-height:44px;padding:0 16px;border-radius:22px;border:1px solid transparent;background:none;color:rgb(var(--muted));font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+.vt.on {background:rgb(var(--surface));border-color:rgb(var(--line));color:rgb(var(--fg));font-weight:600}
+.vt:focus-visible,.map-pin:focus-visible {outline:2px solid rgb(var(--accent));outline-offset:1px}
+
+/* The map panel: the zone card's tag shape, square at the top left corner
+   where it hangs from a pin. At most 28rem wide, centred, so it never
+   grows huge on a desktop window. */
+.zone-map {position:relative;width:100%;max-width:28rem;aspect-ratio:1/1;margin:0 auto;background:rgb(var(--surface));border:1px solid rgb(var(--line));border-radius:6px 20px 20px 20px;overflow:hidden}
+#map-svg {display:block;width:100%;height:100%}
+.ring {fill:none;stroke:rgb(var(--line));stroke-width:1.5;stroke-dasharray:4 4}
+.ring-label {font-size:12px;fill:rgb(var(--muted))}
+.you {fill:rgb(var(--accent));stroke:rgb(var(--surface));stroke-width:3}
+
+/* The pins: 44x44 tap buttons whose tip sits on the zone's point, drawn
+   with the card's line-drawn orange pin and a dot in the kind's colour. */
+.map-pin {position:absolute;width:44px;height:44px;padding:0;border:0;background:none;transform:translate(-50%,-100%);cursor:pointer}
+.map-pin svg {display:block;width:28px;height:28px;margin:0 auto}
+.mpin {fill:rgb(var(--surface));stroke:rgb(var(--accent));stroke-width:1.8;stroke-linejoin:round}
+.dot-makanan {fill:rgb(var(--food))}
+.dot-ojek {fill:rgb(var(--ride))}
+.dot-jualan {fill:rgb(var(--sell))}
+.dot-jasa {fill:rgb(var(--service))}
+
+/* The key and the lines under the map, matching the panel's width. */
+.map-noloc {max-width:28rem;margin:12px auto 0;padding:0 4px;font-size:14px;line-height:20px;color:rgb(var(--muted))}
+.map-key {display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:28rem;margin:12px auto 4px;font-size:14px;line-height:20px}
+.key-you {display:inline-flex;align-items:center;gap:6px;color:rgb(var(--fg));padding:2px 4px}
+.key-you i {width:10px;height:10px;border-radius:5px;background:rgb(var(--accent));display:inline-block}
+.map-hint {max-width:28rem;margin:4px auto 0;padding:0 4px;font-size:14px;line-height:20px;color:rgb(var(--muted))}
+
 @media (prefers-reduced-motion: reduce) {
   .zone,.sheet {transition:none;animation:none}
 }

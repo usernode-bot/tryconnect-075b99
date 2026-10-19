@@ -144,7 +144,13 @@
       <button class="chip" data-filter="jualan" type="button">Jualan</button>
       <button class="chip" data-filter="jasa" type="button">Jasa</button>
     </div>
-    <p class="section-label" id="section-label"></p>
+    <div class="view-row" id="view-row" hidden>
+      <p class="section-label" id="section-label"></p>
+      <div class="view-toggle" id="view-toggle" role="group" aria-label="Tampilan">
+        <button class="vt on" type="button" data-view="daftar" aria-pressed="true">Daftar</button>
+        <button class="vt" type="button" data-view="peta" aria-pressed="false">Peta</button>
+      </div>
+    </div>
 
     <!-- The location line: hidden until the list has distances it can offer
          to sort, or until permission is missing and the list fell back to
@@ -187,6 +193,20 @@
     <template id="zone-row">
       <div class="zone"><svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div class="zb"><div class="zt"><span class="zn"></span><span class="dist"></span></div><p class="note"></p><div class="meta"><span class="badge"></span><span class="by"></span></div></div></div>
     </template>
+
+    <!-- ── Peta view: a drawn map of the same list Daftar shows ── -->
+    <div id="zone-map" hidden>
+      <div class="zone-map" id="map-panel">
+        <svg id="map-svg" viewBox="0 0 360 360" role="img" aria-label="Peta zona di sekitar kamu"></svg>
+      </div>
+      <p class="map-noloc" id="map-noloc-line" hidden></p>
+      <div class="map-key" id="map-key" hidden></div>
+      <p class="map-hint" id="map-hint" hidden>Ketuk pin untuk buka zona.</p>
+      <div id="map-empty" class="state-empty" hidden>
+        <p class="empty-title" id="map-empty-title"></p>
+        <p class="empty-sub" id="map-empty-sub"></p>
+      </div>
+    </div>
 
     <button class="btn-primary" id="add-fab" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Tambah zona</button>
 
@@ -300,6 +320,7 @@
     var photoObjUrl = null;
     var origin = null;          // the viewer's position {lat,lng}, or demoOrigin in the demo
     var filter = 'all';
+    var view = 'daftar';      // the Daftar/Peta switch; in memory only
     var token = new URLSearchParams(location.search).get('token') || '';
 
     function $(id) { return document.getElementById(id); }
@@ -386,6 +407,130 @@
     }
 
     function badgeCat(cat) { return CATEGORIES[cat] || cat; }
+
+    // ── The Peta view ────────────────────────────────────────────────────
+    // A drawn map of the same list Daftar shows: you at the middle, one pin
+    // per zone with a dot in its kind's colour, dashed rings for distance.
+    // Flat projection, fine at city scale, north up; no map service.
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+    var MAP_STEPS = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000];
+
+    function renderMap(list) {
+      var panel = $('map-panel'), svg = $('map-svg'), key = $('map-key'),
+          hint = $('map-hint'), noloc = $('map-noloc-line'), empty = $('map-empty');
+      // A redraw starts clean: the SVG is emptied below, and any pin
+      // buttons a previous draw left on the panel go too.
+      panel.querySelectorAll('.map-pin').forEach(function (b) { b.remove(); });
+      var plotted = list.filter(function (z) { return z.lat != null && z.lng != null; });
+      var skipped = list.length - plotted.length;
+
+      function showEmpty(title, sub) {
+        panel.style.display = 'none';
+        key.hidden = true; hint.hidden = true; noloc.hidden = true;
+        empty.hidden = false;
+        $('map-empty-title').textContent = title;
+        $('map-empty-sub').textContent = sub;
+      }
+
+      if (!origin) {
+        showEmpty('Peta butuh lokasi kamu',
+          'Ketuk Pakai lokasi saya, zona digambar di sekitar kamu.');
+        return;
+      }
+      if (plotted.length === 0) {
+        showEmpty('Belum ada zona dengan lokasi',
+          'Zona yang disimpan tanpa lokasi hanya ada di Daftar.');
+        return;
+      }
+      empty.hidden = true;
+      panel.style.display = '';
+      key.hidden = false;
+      hint.hidden = false;
+      noloc.hidden = skipped === 0;
+      if (skipped > 0) noloc.textContent = skipped + ' zona tanpa lokasi hanya ada di Daftar.';
+
+      // Rings: fixed at 50 m and 100 m under the Ojek chip (its outer ring
+      // is the chip's radius); otherwise the smallest step that fits the
+      // farthest zone in three rings.
+      var step, n;
+      if (filter === 'ojek') { step = 0.05; n = 2; }
+      else {
+        var max = 0;
+        plotted.forEach(function (z) { max = Math.max(max, distanceKm(origin, z)); });
+        step = MAP_STEPS[MAP_STEPS.length - 1];
+        for (var i = 0; i < MAP_STEPS.length; i++) {
+          if (Math.ceil(max / MAP_STEPS[i]) <= 3) { step = MAP_STEPS[i]; break; }
+        }
+        n = Math.max(1, Math.ceil(max / step));
+      }
+      var SIZE = 360, C = SIZE / 2;
+      var s = 0.42 * SIZE / (n * step);   // px per km; the outer ring sits at 42% of the side
+
+      svg.textContent = '';
+      for (var r = 1; r <= n; r++) {
+        var rad = step * r * s;
+        var ring = document.createElementNS(SVG_NS, 'circle');
+        ring.setAttribute('class', 'ring');
+        ring.setAttribute('cx', C); ring.setAttribute('cy', C); ring.setAttribute('r', rad);
+        svg.appendChild(ring);
+        var lab = document.createElementNS(SVG_NS, 'text');
+        lab.setAttribute('class', 'ring-label');
+        lab.setAttribute('x', C + 3);
+        lab.setAttribute('y', C - rad + 13);
+        lab.textContent = fmtDist(step * r);
+        svg.appendChild(lab);
+      }
+      var you = document.createElementNS(SVG_NS, 'circle');
+      you.setAttribute('class', 'you');
+      you.setAttribute('cx', C); you.setAttribute('cy', C); you.setAttribute('r', 7);
+      svg.appendChild(you);
+
+      // Pins, farthest first so the nearest is drawn on top. The flat
+      // projection: east of the equator degree scaled by the latitude.
+      var withDist = plotted.map(function (z) {
+        var east = (z.lng - origin.lng) * 111.32 * Math.cos(origin.lat * Math.PI / 180);
+        var north = (z.lat - origin.lat) * 110.574;
+        return { z: z, east: east, north: north, d: distanceKm(origin, z) };
+      });
+      withDist.sort(function (a, b) { return b.d - a.d; });
+      withDist.forEach(function (p) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'map-pin';
+        b.style.left = ((C + p.east * s) / SIZE * 100) + '%';
+        b.style.top = ((C - p.north * s) / SIZE * 100) + '%';
+        b.setAttribute('aria-label', p.z.name + ', ' + badgeCat(p.z.category) + ', ' + fmtDist(p.d));
+        var g = document.createElementNS(SVG_NS, 'svg');
+        g.setAttribute('viewBox', '0 0 24 24');
+        g.setAttribute('aria-hidden', 'true');
+        var path = document.createElementNS(SVG_NS, 'path');
+        path.setAttribute('class', 'mpin');
+        path.setAttribute('d', 'M12 21s-7-6-7-11a7 7 0 0114 0c0 5-7 11-7 11z');
+        var dot = document.createElementNS(SVG_NS, 'circle');
+        dot.setAttribute('class', 'dot-' + p.z.category);
+        dot.setAttribute('cx', 12); dot.setAttribute('cy', 10); dot.setAttribute('r', 3);
+        g.appendChild(path); g.appendChild(dot);
+        b.appendChild(g);
+        b.addEventListener('click', function () { openDetail(p.z); });
+        panel.appendChild(b);
+      });
+
+      // The key: you, then one badge per kind on the map with its count.
+      key.textContent = '';
+      var ky = document.createElement('span');
+      ky.className = 'key-you';
+      ky.appendChild(document.createElement('i'));
+      ky.appendChild(document.createTextNode(usingDemoOrigin ? 'Titik demo' : 'Kamu'));
+      key.appendChild(ky);
+      FILTERS.slice(1).forEach(function (cat) {
+        var k = withDist.filter(function (p) { return p.z.category === cat; }).length;
+        if (k === 0) return;
+        var bd = document.createElement('span');
+        bd.className = 'badge ' + cat;
+        bd.textContent = badgeCat(cat) + ' ' + k;
+        key.appendChild(bd);
+      });
+    }
 
     function renderList() {
       var list = sorted();
@@ -475,7 +620,13 @@
       $('state-empty').hidden = !(zones.length === 0 && loaded);
       $('state-error').hidden = !loadFailed;
       $('state-filter-empty').hidden = !noFilterHit;
-      $('zone-list').hidden = list.length === 0;
+      // The Daftar/Peta switch shows once zones have loaded — not while
+      // loading, on the error screen, or on the "Belum ada zona" screen.
+      $('view-row').hidden = !loaded || loadFailed || zones.length === 0;
+      var peta = view === 'peta' && loaded && !loadFailed;
+      $('zone-list').hidden = peta || list.length === 0;
+      $('zone-map').hidden = !peta || list.length === 0;
+      if (peta && list.length > 0) renderMap(list);
       if (noFilterHit) $('filter-name').textContent =
         filter === 'ojek' ? 'Ojek dalam 100 m' : badgeCat(filter);
       // The screen's one primary button: hidden when the empty state's
@@ -898,6 +1049,17 @@
       renderList();
     });
     $('loc-btn').addEventListener('click', useMyLocation);
+    $('view-toggle').addEventListener('click', function (e) {
+      var b = e.target.closest('.vt');
+      if (!b || b.dataset.view === view) return;
+      view = b.dataset.view;
+      $('view-toggle').querySelectorAll('.vt').forEach(function (x) {
+        var on = x === b;
+        x.classList.toggle('on', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      renderList();
+    });
     $('add-fab').addEventListener('click', openAdd);
     document.querySelector('.empty-add').addEventListener('click', openAdd);
     $('retry-btn').addEventListener('click', load);
