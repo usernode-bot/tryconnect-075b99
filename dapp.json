@@ -41,6 +41,11 @@
       "expectSelector": "[data-points]"
     },
     {
+      "name": "Peta view toggle present",
+      "path": "/?demo=1",
+      "expectSelector": "#view-toggle"
+    },
+    {
       "name": "Health",
       "path": "/health",
       "expectText": "ok"
